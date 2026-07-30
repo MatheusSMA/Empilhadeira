@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formação XR Empilhadeira + Calculadoras — Natura/Avon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --ink: #14181C;
+            --steel: #2E353D;
+            --slate: #5C666F;
+            --line: #C9C6BE;
+            --concrete: #E6E3DC;
+            --paper: #F5F3EE;
+            --white: #FCFBF8;
+            --hazard: #F0B208;
+            --signal: #B8352B;
+            --deep: #1F5C51;
+            --display: "Barlow Condensed", Impact, sans-serif;
+            --body: "IBM Plex Sans", system-ui, sans-serif;
+            --mono: "IBM Plex Mono", ui-monospace, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 15px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased
+        }
+
+        .wrap {
+            max-width: 940px;
+            margin: 0 auto;
+            padding: 0 24px
+        }
+
+        .masthead {
+            border-bottom: 2px solid var(--ink);
+            padding: 26px 0 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 20px;
+            flex-wrap: wrap
+        }
+
+        .masthead .org {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: .16em;
+            text-transform: uppercase
+        }
+
+        .masthead .meta {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--slate);
+            text-align: right;
+            letter-spacing: .05em;
+            line-height: 1.8
+        }
+
+        .hero {
+            padding: 46px 0 32px
+        }
+
+        .eyebrow {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            text-transform: uppercase;
+            color: var(--signal);
+            margin-bottom: 16px
+        }
+
+        .hero h1 {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: clamp(38px, 6.6vw, 74px);
+            line-height: .95;
+            text-transform: uppercase;
+            max-width: 16ch
+        }
+
+        .hero .sub {
+            margin-top: 20px;
+            font-size: 16px;
+            max-width: 60ch;
+            color: var(--steel)
+        }
+
+        section {
+            padding: 42px 0;
+            border-top: 1px solid var(--line)
+        }
+
+        .shead {
+            display: flex;
+            gap: 16px;
+            align-items: baseline;
+            margin-bottom: 22px;
+            flex-wrap: wrap
+        }
+
+        .snum {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--signal);
+            letter-spacing: .14em;
+            padding-top: 8px
+        }
+
+        .shead h2 {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: clamp(26px, 3.8vw, 38px);
+            line-height: 1.05;
+            text-transform: uppercase
+        }
+
+        .lede {
+            font-size: 15px;
+            color: var(--steel);
+            max-width: 66ch;
+            margin-bottom: 22px
+        }
+
+        p {
+            margin-bottom: 14px;
+            max-width: 74ch
+        }
+
+        strong {
+            font-weight: 600
+        }
+
+        .level {
+            border: 1px solid var(--line);
+            border-left: 5px solid var(--steel);
+            background: var(--white);
+            margin: 16px 0;
+            border-radius: 0 3px 3px 0;
+            overflow: hidden
+        }
+
+        .level.n1 {
+            border-left-color: #378ADD
+        }
+
+        .level.n2 {
+            border-left-color: #B8352B
+        }
+
+        .level.n3 {
+            border-left-color: #1D9E75
+        }
+
+        .level.n4 {
+            border-left-color: #BA7517
+        }
+
+        .level.n5 {
+            border-left-color: #534AB7
+        }
+
+        .level.n6 {
+            border-left-color: #2E353D
+        }
+
+        .level-head {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 22px;
+            background: var(--concrete)
+        }
+
+        .level-tag {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--white);
+            background: var(--steel);
+            padding: 5px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .level.n1 .level-tag {
+            background: #185FA5
+        }
+
+        .level.n2 .level-tag {
+            background: #A32D2D
+        }
+
+        .level.n3 .level-tag {
+            background: #0F6E56
+        }
+
+        .level.n4 .level-tag {
+            background: #854F0B
+        }
+
+        .level.n5 .level-tag {
+            background: #3C3489
+        }
+
+        .level.n6 .level-tag {
+            background: #2E353D
+        }
+
+        .level-title {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 24px;
+            text-transform: uppercase;
+            line-height: 1;
+            flex: 1
+        }
+
+        .level-time {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--slate);
+            white-space: nowrap
+        }
+
+        .level-body {
+            padding: 18px 22px
+        }
+
+        .level-body .cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px
+        }
+
+        .mini .t {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            color: var(--slate);
+            margin-bottom: 9px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .mini ul {
+            list-style: none;
+            font-size: 13.5px;
+            line-height: 1.5
+        }
+
+        .mini li {
+            padding-left: 16px;
+            position: relative;
+            margin-bottom: 6px
+        }
+
+        .mini li::before {
+            content: "—";
+            position: absolute;
+            left: 0;
+            color: var(--slate)
+        }
+
+        .mini li.game {
+            padding-left: 22px
+        }
+
+        .mini li.game::before {
+            content: "▶";
+            color: var(--signal);
+            font-size: 9px;
+            left: 2px;
+            top: 4px
+        }
+
+        .mini li.test {
+            padding-left: 22px
+        }
+
+        .mini li.test::before {
+            content: "✓";
+            color: var(--deep);
+            left: 2px;
+            font-weight: 700
+        }
+
+        .gate {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .06em;
+            color: var(--signal);
+            background: #F7E9E7;
+            padding: 8px 12px;
+            border-radius: 3px;
+            margin-top: 14px;
+            display: inline-block
+        }
+
+        .tbl {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 14px
+        }
+
+        .tbl th {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            text-align: left;
+            color: var(--slate);
+            border-bottom: 1.5px solid var(--ink);
+            padding: 9px 12px 9px 0;
+            font-weight: 500
+        }
+
+        .tbl td {
+            padding: 11px 12px 11px 0;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top
+        }
+
+        .tbl td.n,
+        .tbl th.n {
+            text-align: right;
+            font-family: var(--mono);
+            font-size: 13px;
+            white-space: nowrap;
+            padding-right: 0
+        }
+
+        .tbl tr.hi td {
+            background: #EFE9D4
+        }
+
+        .tbl tr.total td {
+            border-top: 1.5px solid var(--ink);
+            border-bottom: none;
+            font-weight: 600;
+            padding-top: 12px
+        }
+
+        .tbl caption {
+            caption-side: top;
+            text-align: left;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--slate);
+            padding-bottom: 8px
+        }
+
+        .sm {
+            color: var(--slate);
+            font-size: 13px
+        }
+
+        .call {
+            border-left: 3px solid var(--signal);
+            background: var(--concrete);
+            padding: 18px 22px;
+            margin: 24px 0
+        }
+
+        .call .lbl {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: var(--signal);
+            margin-bottom: 7px
+        }
+
+        .call p:last-child {
+            margin-bottom: 0
+        }
+
+        .call.ok {
+            border-left-color: var(--deep)
+        }
+
+        .call.ok .lbl {
+            color: var(--deep)
+        }
+
+        .calc {
+            background: var(--steel);
+            color: var(--white);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 10px 26px rgba(20, 24, 28, .18);
+            margin: 8px 0
+        }
+
+        .calc-head {
+            padding: 16px 26px;
+            border-bottom: 1px solid rgba(255, 255, 255, .16);
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            text-transform: uppercase;
+            color: var(--hazard);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px
+        }
+
+        .calc-head .reset {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: #A9B1B9;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, .25);
+            border-radius: 3px;
+            padding: 5px 11px;
+            cursor: pointer;
+            text-transform: uppercase
+        }
+
+        .calc-head .reset:hover {
+            background: rgba(255, 255, 255, .08);
+            color: #fff
+        }
+
+        .calc-body {
+            display: grid;
+            grid-template-columns: 1.1fr .9fr;
+            gap: 0
+        }
+
+        .calc-controls {
+            padding: 20px 26px;
+            border-right: 1px solid rgba(255, 255, 255, .14)
+        }
+
+        .roleblock {
+            padding: 13px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, .14)
+        }
+
+        .roleblock:last-child {
+            border-bottom: none
+        }
+
+        .roleblock .rn {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--hazard);
+            margin-bottom: 10px
+        }
+
+        .ctrl {
+            margin-bottom: 12px
+        }
+
+        .ctrl:last-child {
+            margin-bottom: 0
+        }
+
+        .ctrl label {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #A9B1B9;
+            margin-bottom: 7px
+        }
+
+        .ctrl label .val {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 18px;
+            color: #fff
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, .2);
+            outline: none
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--hazard);
+            cursor: pointer;
+            border: 2px solid var(--steel)
+        }
+
+        input[type=range]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--hazard);
+            cursor: pointer;
+            border: 2px solid var(--steel)
+        }
+
+        .gctrl {
+            margin-top: 6px
+        }
+
+        .gctrl label {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: #A9B1B9;
+            margin-bottom: 8px
+        }
+
+        .gctrl label .val {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 20px;
+            color: var(--hazard)
+        }
+
+        .calc-out {
+            padding: 20px 26px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            justify-content: center
+        }
+
+        .orow .k {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: #A9B1B9;
+            margin-bottom: 3px
+        }
+
+        .orow .big {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 34px;
+            line-height: .95
+        }
+
+        .orow.hot .big {
+            color: var(--hazard)
+        }
+
+        .orow .note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            color: #8C949C;
+            margin-top: 3px
+        }
+
+        .odiv {
+            border-top: 1px dashed rgba(255, 255, 255, .16)
+        }
+
+        .flag {
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .05em;
+            padding: 4px 8px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-top: 4px
+        }
+
+        .flag.ok {
+            background: rgba(31, 92, 81, .5);
+            color: #8FD9C6
+        }
+
+        .flag.warn {
+            background: rgba(184, 53, 43, .4);
+            color: #F0A9A3
+        }
+
+        .flag.low {
+            background: rgba(240, 178, 8, .2);
+            color: var(--hazard)
+        }
+
+        .copybtn {
+            margin-top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            background: var(--ink);
+            color: var(--white);
+            border: none;
+            border-radius: 3px;
+            padding: 12px 20px;
+            cursor: pointer
+        }
+
+        .copybtn:hover {
+            background: var(--steel)
+        }
+
+        .copybtn.done {
+            background: var(--deep)
+        }
+
+        .suggest {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1px;
+            background: var(--line);
+            border: 1px solid var(--line);
+            margin: 22px 0
+        }
+
+        .sug {
+            background: var(--white);
+            padding: 18px 20px;
+            text-align: center
+        }
+
+        .sug.pick {
+            background: var(--concrete);
+            border-top: 4px solid var(--deep)
+        }
+
+        .sug .lbl {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--slate);
+            margin-bottom: 8px
+        }
+
+        .sug .amt {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 32px;
+            line-height: 1
+        }
+
+        .sug .desc {
+            font-size: 12px;
+            color: var(--slate);
+            margin-top: 8px;
+            line-height: 1.4
+        }
+
+        .refcard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 1px;
+            background: var(--line);
+            border: 1px solid var(--line);
+            margin: 20px 0
+        }
+
+        .ref {
+            background: var(--white);
+            padding: 18px 20px
+        }
+
+        .ref .co {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 20px;
+            text-transform: uppercase
+        }
+
+        .ref .cc {
+            font-family: var(--mono);
+            font-size: 10px;
+            color: var(--slate);
+            margin: 3px 0 10px;
+            letter-spacing: .05em
+        }
+
+        .ref .pp {
+            font-size: 13px;
+            line-height: 1.5
+        }
+
+        .ref .price {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--deep);
+            margin-top: 8px;
+            font-weight: 600
+        }
+
+        footer {
+            border-top: 2px solid var(--ink);
+            padding: 24px 0 60px;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--slate);
+            line-height: 1.85
+        }
+
+        @media (max-width:720px) {
+            .level-body .cols {
+                grid-template-columns: 1fr
+            }
+
+            .calc-body {
+                grid-template-columns: 1fr
+            }
+
+            .calc-controls {
+                border-right: none;
+                border-bottom: 1px solid rgba(255, 255, 255, .14)
+            }
+
+            .level-head {
+                flex-wrap: wrap;
+                gap: 10px
+            }
+
+            .tbl {
+                font-size: 13px
+            }
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                font-size: 11pt
+            }
+
+            .calc,
+            .copybtn,
+            .calc-head .reset {
+                display: none !important
+            }
+
+            section,
+            .level {
+                page-break-inside: avoid
+            }
+
+            .level,
+            .tbl tr.hi td,
+            .call,
+            .ref,
+            .sug.pick {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+
+        <div class="masthead">
+            <div class="org">Formação XR + Precificação</div>
+            <div class="meta">CLIENTE-ALVO: NATURA / AVON<br>BASE: NR-11 · QUEST 3 · TIME DE 4<br>JULHO 2026 · USD/BRL
+                5,08</div>
+        </div>
+
+        <div class="hero">
+            <div class="eyebrow">Trilha de formação alinhada à NR-11 + modelo comercial enxuto</div>
+            <h1>Trilha do operador e o que cobrar — margem mínima</h1>
+            <p class="sub">Índice de formação em 6 níveis, na ordem oficial de ensino da NR-11, com mini-testes e
+                micro-games. Depois, duas calculadoras — PoC e projeto completo — no modo de menor margem viável para
+                entrar competitivo e ganhar o cliente.</p>
+        </div>
+
+        <section>
+            <div class="shead"><span class="snum">01</span>
+                <h2>Como funciona a certificação real</h2>
+            </div>
+            <p class="lede">A trilha espelha a certificação oficial para ter valor de venda. O que a NR-11 exige na
+                prática:</p>
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Etapa oficial</th>
+                        <th>O que é</th>
+                        <th class="n">Nosso papel</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Teórico</td>
+                        <td>Legislação, componentes, estabilidade, segurança, check-list</td>
+                        <td class="n">Substituímos / complementamos</td>
+                    </tr>
+                    <tr class="hi">
+                        <td>Prático supervisionado</td>
+                        <td>Operação real em máquina, com instrutor</td>
+                        <td class="n">Preparamos e reduzimos horas</td>
+                    </tr>
+                    <tr>
+                        <td>Avaliação teórica + prática</td>
+                        <td>Aprovação mínima 75% de frequência e nota</td>
+                        <td class="n">Quiz + telemetria pontuam</td>
+                    </tr>
+                    <tr>
+                        <td>Certificado</td>
+                        <td>Emitido por profissional habilitado, validade 2 anos</td>
+                        <td class="n">Fornecemos o registro de desempenho</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p>Carga horária de referência: formação inicial de <strong>16h a 40h</strong> (mínimo 8h teoria + 8h
+                prática); reciclagem a cada 2 anos, ou em caso de acidente, mudança de equipamento ou afastamento
+                prolongado. Certificado <strong>vale 2 anos</strong>.</p>
+            <div class="call">
+                <div class="lbl">Munição de venda — o custo de NÃO treinar</div>
+                <p>Operar sem habilitação NR-11 é infração grave. A multa por trabalhador não habilitado pode
+                    <strong>passar de R$ 10.000</strong>, além da responsabilidade civil em caso de acidente. Centros de
+                    distribuição são autuados com frequência. Esse número vale mais que qualquer comparação de preço:
+                    mostra ao cliente o custo real de não comprar.</p>
+            </div>
+            <div class="call ok">
+                <div class="lbl">Limite legal — sempre transparente</div>
+                <p>A prática obrigatória em máquina real não pode ser 100% substituída por VR hoje. A trilha
+                    <strong>prepara, encurta e comprova</strong> o desempenho antes da máquina — não emite o certificado
+                    sozinha. Posicionar como pré-requisito e reciclagem, nunca como substituto legal.</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="shead"><span class="snum">02</span>
+                <h2>Índice de formação — 6 níveis</h2>
+            </div>
+            <p class="lede">Ordem baseada no conteúdo programático oficial: entender a máquina → estabilidade → inspeção
+                e comandos → movimento → carga → segurança e avaliação. Progressão travada: só destrava quem passa no
+                teste anterior. Legenda: <strong>✓ teste</strong> · <strong>▶ micro-game</strong>.</p>
+
+            <div class="level n1">
+                <div class="level-head"><span class="level-tag">Nível 1</span><span class="level-title">Entender a
+                        máquina</span><span class="level-time">~25 min</span></div>
+                <div class="level-body">
+                    <div class="cols">
+                        <div class="mini">
+                            <div class="t">Aprende</div>
+                            <ul>
+                                <li>O que é uma empilhadeira, uso e aplicações</li>
+                                <li>Tipos e classificação: contrabalançada, retrátil, transpaleteira</li>
+                                <li>Nomenclatura das partes (torre, mastro, garfo, contrapeso)</li>
+                                <li>Instrumentos e equipamentos do painel</li>
+                                <li>Especificação técnica e leitura da placa de identificação</li>
+                            </ul>
+                        </div>
+                        <div class="mini">
+                            <div class="t">Pratica e testa</div>
+                            <ul>
+                                <li class="game">Micro-game: apontar e nomear cada parte na empilhadeira 3D</li>
+                                <li class="test">Teste: quiz de identificação de componentes</li>
+                                <li class="test">Teste: qual empilhadeira para qual tarefa</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <span class="gate">Trava: 70% no quiz de componentes para avançar</span>
+                </div>
+            </div>
+
+            <div class="level n2">
+                <div class="level-head"><span class="level-tag">Nível 2</span><span class="level-title">Estabilidade e
+                        capacidade de carga</span><span class="level-time">~30 min</span></div>
+                <div class="level-body">
+                    <div class="cols">
+                        <div class="mini">
+                            <div class="t">Aprende</div>
+                            <ul>
+                                <li>Centro de gravidade e princípio da alavanca</li>
+                                <li>Estabilidade frontal e lateral · base de apoio</li>
+                                <li>Centro de carga e curva de capacidade (peso × distância)</li>
+                                <li>Leitura da placa de capacidade</li>
+                                <li>Velocidade segura e o que causa o tombamento</li>
+                            </ul>
+                        </div>
+                        <div class="mini">
+                            <div class="t">Pratica e testa</div>
+                            <ul>
+                                <li class="game">Micro-game: "carga ou tomba?" — decidir se o peso cabe na curva antes
+                                    de erguer</li>
+                                <li class="test">Teste: interpretar a placa de capacidade</li>
+                                <li class="test">Teste: identificar situações de risco de tombamento</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <span class="gate">Trava: acertar a leitura da placa e evitar o tombamento no game</span>
+                </div>
+            </div>
+
+            <div class="level n3">
+                <div class="level-head"><span class="level-tag">Nível 3</span><span class="level-title">Inspeção diária
+                        e comandos</span><span class="level-time">~35 min</span></div>
+                <div class="level-body">
+                    <div class="cols">
+                        <div class="mini">
+                            <div class="t">Aprende</div>
+                            <ul>
+                                <li>Check-list diário pré-operação (o primeiro passo real)</li>
+                                <li>Pedais: acelerador, freio, inching</li>
+                                <li>Alavancas: elevação, inclinação da torre, acessórios</li>
+                                <li>Instrumentos do painel e freio de estacionamento</li>
+                                <li>Sequência de partida segura e uso do cinto</li>
+                            </ul>
+                        </div>
+                        <div class="mini">
+                            <div class="t">Pratica e testa</div>
+                            <ul>
+                                <li class="game">Micro-game: check-list interativo — achar os itens irregulares antes de
+                                    liberar a máquina</li>
+                                <li class="game">Micro-game: "acerte o comando" — o sistema pede uma ação e o operador
+                                    usa a alavanca certa</li>
+                                <li class="test">Teste: sequência correta de partida e associação alavanca→função</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <span class="gate">Trava: completar o check-list e a partida segura sem erro de ordem</span>
+                </div>
+            </div>
+
+            <div class="level n4">
+                <div class="level-head"><span class="level-tag">Nível 4</span><span class="level-title">Máquina parada →
+                        movimento</span><span class="level-time">~40 min</span></div>
+                <div class="level-body">
+                    <div class="cols">
+                        <div class="mini">
+                            <div class="t">Aprende</div>
+                            <ul>
+                                <li>Operação parada: reconhecer os movimentos básicos</li>
+                                <li>Arrancar suave, acelerar e frear sem solavanco</li>
+                                <li>Curvas: a empilhadeira vira pela traseira</li>
+                                <li>Avante, ré, slalom · uso de espelhos</li>
+                                <li>Direção defensiva: velocidade, buzina, rampas sem carga</li>
+                            </ul>
+                        </div>
+                        <div class="mini">
+                            <div class="t">Pratica e testa</div>
+                            <ul>
+                                <li class="game">Micro-game de movimento: circuito de cones dentro do tempo e do limite
+                                    de velocidade</li>
+                                <li class="game">Micro-game: baliza em corredor estreito de gôndola</li>
+                                <li class="test">Teste: pontuação do circuito (cones + tempo + suavidade)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <span class="gate">Trava: circuito sem colisão e dentro do tempo-alvo</span>
+                </div>
+            </div>
+
+            <div class="level n5">
+                <div class="level-head"><span class="level-tag">Nível 5</span><span class="level-title">Operação com
+                        carga</span><span class="level-time">~40 min</span></div>
+                <div class="level-body">
+                    <div class="cols">
+                        <div class="mini">
+                            <div class="t">Aprende</div>
+                            <ul>
+                                <li>Altura de trânsito do garfo (baixo ao andar)</li>
+                                <li>Inclinação da torre ao pegar e transportar</li>
+                                <li>Encaixe e centralização no palete</li>
+                                <li>Empilhamento e desempilhamento em altura</li>
+                                <li>Transporte com carga e operação em rampa</li>
+                            </ul>
+                        </div>
+                        <div class="mini">
+                            <div class="t">Pratica e testa</div>
+                            <ul>
+                                <li class="game">Micro-game de levantamento: pegar palete, elevar à prateleira certa e
+                                    depositar sem bater — precisão pontua mais que velocidade</li>
+                                <li class="test">Teste: precisão de encaixe e depósito</li>
+                                <li class="test">Teste: transporte seguro respeitando a capacidade</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <span class="gate">Trava: 3 paletes depositados sem colisão e sem exceder a capacidade</span>
+                </div>
+            </div>
+
+            <div class="level n6">
+                <div class="level-head"><span class="level-tag">Nível 6</span><span class="level-title">Segurança +
+                        avaliação final</span><span class="level-time">~30 min</span></div>
+                <div class="level-body">
+                    <div class="cols">
+                        <div class="mini">
+                            <div class="t">Aprende</div>
+                            <ul>
+                                <li>EPI e EPC · sinalização e comunicação</li>
+                                <li>Ações em caso de tombamento e emergência</li>
+                                <li>Prevenção e combate a incêndio</li>
+                                <li>Responsabilidade civil, criminal e trabalhista</li>
+                                <li>Estacionamento e desligamento seguro no fim do turno</li>
+                            </ul>
+                        </div>
+                        <div class="mini">
+                            <div class="t">Pratica e testa</div>
+                            <ul>
+                                <li class="game">Micro-game: reconhecer a ação correta em cenários de emergência</li>
+                                <li class="test">Avaliação teórica final (banco NR-11)</li>
+                                <li class="test">Avaliação prática: missão completa cronometrada e pontuada</li>
+                                <li class="test">Relatório de desempenho enviado ao dashboard (JSON)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <span class="gate">Conclusão: nota final + telemetria compõem o registro para o instrutor
+                        certificar</span>
+                </div>
+            </div>
+
+            <div class="call ok">
+                <div class="lbl">Por que essa ordem importa</div>
+                <p>É a sequência real das escolas certificadoras: estabilidade vem <em>antes</em> de dirigir (é o que
+                    evita o tombamento, principal causa de morte), e a inspeção diária vem <em>antes</em> dos comandos
+                    (na vida real você checa a máquina antes de ligar). Cada nível é também um <strong>módulo de
+                        escopo</strong> vendável — dá para cobrar níveis novos avulsos depois (docas, retrátil, área
+                    classificada).</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="shead"><span class="snum">03</span>
+                <h2>Referências de mercado — preço público</h2>
+            </div>
+            <p class="lede">Do app de gôndola ao simulador enterprise. Os grandes trabalham sob cotação — sinal de que o
+                valor é alto e não exposto.</p>
+            <div class="refcard">
+                <div class="ref">
+                    <div class="co">App consumer</div>
+                    <div class="cc">Forklift Driving Simulator VR · Meta Store</div>
+                    <div class="pp">Empilhadeira em VR para o público geral, sem certificação nem telemetria.</div>
+                    <div class="price">US$ 14,99 (~R$ 76)</div>
+                </div>
+                <div class="ref">
+                    <div class="co">Tenstar</div>
+                    <div class="cc">Suécia · base de movimento</div>
+                    <div class="pp">Hardware modular, scorecards de segurança, replay 3D. +27 máquinas.</div>
+                    <div class="price">Sob cotação (enterprise)</div>
+                </div>
+                <div class="ref">
+                    <div class="co">CM Labs</div>
+                    <div class="cc">Canadá · engine Vortex</div>
+                    <div class="pp">Alta fidelidade, integra Unity/Unreal, instrutor com injeção de falhas.</div>
+                    <div class="price">Sob cotação (enterprise)</div>
+                </div>
+                <div class="ref">
+                    <div class="co">Serious Labs</div>
+                    <div class="cc">Canadá · VR heavy equipment</div>
+                    <div class="pp">VR de empilhadeira, guindaste e plataformas, foco em certificação.</div>
+                    <div class="price">Sob cotação (enterprise)</div>
+                </div>
+            </div>
+            <p>Leitura direta: <strong>somos muito mais capazes que o app de R$ 76 e muito mais baratos e adaptáveis que
+                    o simulador importado sob cotação.</strong> Esse é o espaço onde um time brasileiro ganha o
+                contrato.</p>
+        </section>
+
+        <section>
+            <div class="shead"><span class="snum">04</span>
+                <h2>Calculadora — PoC</h2>
+            </div>
+            <p class="lede">A prova de conceito, no modo enxuto. Ajuste as horas de cada frente e o valor da hora. O
+                multiplicador começa em 1,4× — o piso que ainda cobre imposto e risco sem virar prejuízo.</p>
+
+            <div class="calc">
+                <div class="calc-head"><span>Painel — custo e preço da PoC</span><button class="reset"
+                        onclick="resetPoc()">Restaurar padrão</button></div>
+                <div class="calc-body">
+                    <div class="calc-controls">
+                        <div class="roleblock">
+                            <div class="rn">Unity — jogo + quiz + integração</div>
+                            <div class="ctrl"><label>Horas <span class="val"><span>60</span>h</span></label><input
+                                    type="range" id="ph0" min="30" max="90" value="60" step="5" oninput="recalcPoc()">
+                            </div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">Backend — endpoint de login + recepção JSON</div>
+                            <div class="ctrl"><label>Horas <span class="val"><span>18</span>h</span></label><input
+                                    type="range" id="ph1" min="0" max="50" value="18" step="2" oninput="recalcPoc()">
+                            </div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">Valor da hora do time</div>
+                            <div class="gctrl"><label>R$/hora <span class="val">R$ <span>120</span></span></label><input
+                                    type="range" id="ph2" min="90" max="200" value="120" step="5" oninput="recalcPoc()">
+                            </div>
+                            <div class="gctrl"><label>Multiplicador <span
+                                        class="val"><span>1.4</span>×</span></label><input type="range" id="ph3"
+                                    min="1.2" max="2.2" value="1.4" step="0.1" oninput="recalcPoc()"></div>
+                        </div>
+                    </div>
+                    <div class="calc-out">
+                        <div class="orow">
+                            <div class="k">Horas totais · custo direto</div>
+                            <div class="big" id="poHrs">78 h</div>
+                            <div class="note" id="poCost">custo R$ 9.360</div>
+                        </div>
+                        <div class="odiv"></div>
+                        <div class="orow hot">
+                            <div class="k">Preço da PoC — cobrar</div>
+                            <div class="big" id="poPrice">R$ 12.900</div>
+                            <div class="note" id="poMargin">margem R$ 3.540</div>
+                            <div id="poFlag"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="suggest">
+                <div class="sug">
+                    <div class="lbl">Mínimo viável</div>
+                    <div class="amt" id="poMin">R$ 7.900</div>
+                    <div class="desc">só cobre custo + imposto. Piso de entrada</div>
+                </div>
+                <div class="sug pick">
+                    <div class="lbl">Sugerido enxuto</div>
+                    <div class="amt" id="poRec">R$ 9.900</div>
+                    <div class="desc">margem pequena, competitivo, não assusta</div>
+                </div>
+                <div class="sug">
+                    <div class="lbl">Confortável</div>
+                    <div class="amt" id="poCf">R$ 12.900</div>
+                    <div class="desc">margem sadia se o cliente aceitar</div>
+                </div>
+            </div>
+            <div class="call ok">
+                <div class="lbl">Regra que protege a PoC</div>
+                <p>PoC paga, 100% abatida do projeto se fechar em 60 dias. Escopo travado por escrito. Mesmo no modo
+                    enxuto, não desça abaixo do "mínimo viável" — abaixo disso a PoC "custa nada" e derruba o preço do
+                    build depois.</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="shead"><span class="snum">05</span>
+                <h2>Calculadora — projeto completo</h2>
+            </div>
+            <p class="lede">O projeto de 6 meses, também no modo enxuto. Ajuste a remuneração de cada papel. O
+                multiplicador começa em 1,4× — margem mínima para entrar competitivo contra o simulador importado.</p>
+
+            <div class="calc">
+                <div class="calc-head"><span>Painel — custo do time × preço ao cliente</span><button class="reset"
+                        onclick="resetProj()">Restaurar padrão</button></div>
+                <div class="calc-body">
+                    <div class="calc-controls">
+                        <div class="roleblock">
+                            <div class="rn">Você — Dev Unity (jogo + quiz + integração)</div>
+                            <div class="ctrl"><label>Mensal <span class="val">R$ <span
+                                            id="v0">12.000</span></span></label><input type="range" id="r0" min="6000"
+                                    max="18000" value="12000" step="500" oninput="recalcProj()"></div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">Backend — API, endpoints, banco</div>
+                            <div class="ctrl"><label>Mensal <span class="val">R$ <span
+                                            id="v1">11.000</span></span></label><input type="range" id="r1" min="6000"
+                                    max="18000" value="11000" step="500" oninput="recalcProj()"></div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">Web / Three.js — app de peças</div>
+                            <div class="ctrl"><label>Mensal <span class="val">R$ <span
+                                            id="v2">9.000</span></span></label><input type="range" id="r2" min="6000"
+                                    max="18000" value="9000" step="500" oninput="recalcProj()"></div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">Hardware / cockpit — Arduino + 3D</div>
+                            <div class="ctrl"><label>Mensal <span class="val">R$ <span
+                                            id="v3">8.000</span></span></label><input type="range" id="r3" min="6000"
+                                    max="18000" value="8000" step="500" oninput="recalcProj()"></div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="gctrl"><label>Meses <span class="val"><span
+                                            id="vm">6</span></span></label><input type="range" id="rm" min="4" max="9"
+                                    value="6" step="1" oninput="recalcProj()"></div>
+                            <div class="gctrl"><label>Multiplicador <span class="val"><span
+                                            id="vk">1.4</span>×</span></label><input type="range" id="rk" min="1.2"
+                                    max="2.5" value="1.4" step="0.1" oninput="recalcProj()"></div>
+                            <div class="gctrl"><label>Custos diretos <span class="val">R$ <span
+                                            id="vc">60</span>k</span></label><input type="range" id="rc" min="30"
+                                    max="120" value="60" step="5" oninput="recalcProj()"></div>
+                        </div>
+                    </div>
+                    <div class="calc-out">
+                        <div class="orow">
+                            <div class="k">Custo do time (período)</div>
+                            <div class="big" id="oTeam">R$ 240.000</div>
+                            <div class="note" id="oTeamNote">R$ 40.000/mês × 6</div>
+                        </div>
+                        <div class="odiv"></div>
+                        <div class="orow">
+                            <div class="k">Custo total (time + diretos)</div>
+                            <div class="big" id="oCost">R$ 300.000</div>
+                        </div>
+                        <div class="odiv"></div>
+                        <div class="orow hot">
+                            <div class="k">Preço a cobrar da Natura</div>
+                            <div class="big" id="oPrice">R$ 420.000</div>
+                            <div class="note" id="oMargin">margem R$ 120.000 · 29%</div>
+                            <div id="oFlag"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="suggest">
+                <div class="sug">
+                    <div class="lbl">Mínimo viável</div>
+                    <div class="amt" id="prMin">R$ 360.000</div>
+                    <div class="desc">1,2× · só sobrevive. Não recomendado</div>
+                </div>
+                <div class="sug pick">
+                    <div class="lbl">Sugerido enxuto</div>
+                    <div class="amt" id="prRec">R$ 420.000</div>
+                    <div class="desc">1,4× · competitivo, margem mínima sadia</div>
+                </div>
+                <div class="sug">
+                    <div class="lbl">Recorrente sugerido</div>
+                    <div class="amt">R$ 8.000<span style="font-size:16px">/mês</span></div>
+                    <div class="desc">plano Essencial, cobre a manutenção anual</div>
+                </div>
+            </div>
+
+            <div style="margin-top:6px"><button class="copybtn" onclick="copySummary(this)">Copiar resumo para o
+                    sócio</button></div>
+
+            <div class="call">
+                <div class="lbl">O que "menor lucro possível" significa aqui</div>
+                <p>Multiplicador 1,4× é o piso de sobrevivência: cobre imposto (Simples/Presumido), retrabalho e o risco
+                    de receber em 90 dias. Abaixo disso vira prejuízo disfarçado. A margem de ~29% parece alta, mas some
+                    rápido com imposto e um atraso de pagamento — ela é o colchão, não o lucro de fato.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        FONTES DE CONTEÚDO: NR-11 / PORTARIA MTB 3.214/78 · UNIMED NOROESTE RS · ESCOLA CONCEITO · AGIL OCUPACIONAL ·
+        TECNOSEG · EXATI · SAMSEST. REFERÊNCIAS DE SIMULADOR: FORKLIFT DRIVING SIMULATOR VR (META STORE) · TENSTAR · CM
+        LABS VORTEX · SERIOUS LABS. CÂMBIO USD/BRL 5,08.<br><br>
+        DOCUMENTO INTERNO. VALORES DE REFERÊNCIA SUJEITOS A REVISÃO APÓS ESCOPO DA FASE 0.
+    </footer>
+
+    <script>
+        const brl = n => "R$ " + Math.round(n).toLocaleString("pt-BR");
+        function roundUp900(v) { let b = Math.ceil(v / 1000) * 1000 - 100; if (b < v) b += 1000; return b; }
+        function setLbl(id, txt) { const inp = document.getElementById(id); const span = inp.parentElement.querySelector(".val span"); if (span) span.textContent = txt; }
+
+        const pocDef = { ph0: 60, ph1: 18, ph2: 120, ph3: 1.4 };
+        function recalcPoc() {
+            const h0 = +document.getElementById("ph0").value;
+            const h1 = +document.getElementById("ph1").value;
+            const rate = +document.getElementById("ph2").value;
+            const k = +document.getElementById("ph3").value;
+            setLbl("ph0", h0 + "h"); setLbl("ph1", h1 + "h"); setLbl("ph2", "R$ " + rate); setLbl("ph3", k.toFixed(1));
+            const hrs = h0 + h1, cost = hrs * rate, price = cost * k, margin = price - cost;
+            document.getElementById("poHrs").textContent = hrs + " h";
+            document.getElementById("poCost").textContent = "custo " + brl(cost);
+            document.getElementById("poPrice").textContent = brl(roundUp900(price));
+            document.getElementById("poMargin").textContent = "margem " + brl(margin);
+            document.getElementById("poMin").textContent = brl(roundUp900(cost * 1.2));
+            document.getElementById("poRec").textContent = brl(roundUp900(cost * 1.45));
+            document.getElementById("poCf").textContent = brl(roundUp900(cost * 1.7));
+            const f = document.getElementById("poFlag");
+            if (price < 6000) { f.innerHTML = '<span class="flag low">abaixo do piso · desvaloriza o build</span>'; }
+            else if (price > 14000) { f.innerHTML = '<span class="flag warn">alto para PoC · pode assustar</span>'; }
+            else { f.innerHTML = '<span class="flag ok">faixa saudável</span>'; }
+        }
+        function resetPoc() { for (const id in pocDef) { document.getElementById(id).value = pocDef[id]; } recalcPoc(); }
+
+        const prDef = { r0: 12000, r1: 11000, r2: 9000, r3: 8000, rm: 6, rk: 1.4, rc: 60 };
+        const ids = ["0", "1", "2", "3"];
+        function recalcProj() {
+            let monthly = 0;
+            ids.forEach(i => { const v = +document.getElementById("r" + i).value; document.getElementById("v" + i).textContent = v.toLocaleString("pt-BR"); monthly += v; });
+            const m = +document.getElementById("rm").value, k = +document.getElementById("rk").value, c = +document.getElementById("rc").value * 1000;
+            document.getElementById("vm").textContent = m;
+            document.getElementById("vk").textContent = k.toFixed(1);
+            document.getElementById("vc").textContent = Math.round(c / 1000);
+            const team = monthly * m, cost = team + c, price = cost * k, margin = price - cost, mp = Math.round(margin / price * 100);
+            document.getElementById("oTeam").textContent = brl(team);
+            document.getElementById("oTeamNote").textContent = brl(monthly) + "/mês × " + m;
+            document.getElementById("oCost").textContent = brl(cost);
+            document.getElementById("oPrice").textContent = brl(price);
+            document.getElementById("oMargin").textContent = "margem " + brl(margin) + " · " + mp + "%";
+            document.getElementById("prMin").textContent = brl(Math.round(cost * 1.2 / 1000) * 1000);
+            document.getElementById("prRec").textContent = brl(Math.round(cost * 1.4 / 1000) * 1000);
+            const f = document.getElementById("oFlag");
+            if (price < 300000) { f.innerHTML = '<span class="flag low">abaixo do piso · desvaloriza o build</span>'; }
+            else if (price > 600000) { f.innerHTML = '<span class="flag warn">acima da faixa · pode assustar a Natura</span>'; }
+            else { f.innerHTML = '<span class="flag ok">faixa saudável R$ 380–480k</span>'; }
+        }
+        function resetProj() { for (const id in prDef) { document.getElementById(id).value = prDef[id]; } recalcProj(); }
+
+        function copySummary(btn) {
+            const team = document.getElementById("oTeam").textContent, cost = document.getElementById("oCost").textContent;
+            const price = document.getElementById("oPrice").textContent, margin = document.getElementById("oMargin").textContent;
+            const m = document.getElementById("vm").textContent, poc = document.getElementById("poPrice").textContent;
+            const txt =
+                `RESUMO — PRECIFICAÇÃO (Empilhadeira XR · Natura/Avon) · modo enxuto
+
+Time de 4 pessoas · ${m} meses
+Custo do time no período: ${team}
+Custo total (time + diretos): ${cost}
+Preço a cobrar da Natura: ${price}
+${margin}
+
+PoC (prova de conceito): ${poc}
+  Abatida do projeto se fechar em 60 dias.
+
+Estrutura de cobrança:
+- Fase 0 (PoC paga) primeiro, abatida do projeto
+- Build por marco, 30% de entrada na assinatura
+- Recorrente: a partir de R$ 8.000/mês por planta (cobre manutenção)
+
+Posicionamento: acima do app de loja (~R$ 76), abaixo do simulador
+importado sob cotação (Tenstar/CM Labs/Serious Labs).`;
+            navigator.clipboard.writeText(txt).then(() => {
+                btn.textContent = "Copiado ✓"; btn.classList.add("done");
+                setTimeout(() => { btn.textContent = "Copiar resumo para o sócio"; btn.classList.remove("done"); }, 2200);
+            });
+        }
+        recalcPoc(); recalcProj();
+    </script>
+</body>
+
+</html>
