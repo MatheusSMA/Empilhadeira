@@ -736,9 +736,234 @@
             line-height: 1.85
         }
 
+        .anchorbox {
+            margin: 26px 0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 12px 30px rgba(20, 24, 28, .22)
+        }
+
+        .anchor {
+            display: grid;
+            grid-template-columns: 1fr 62px 1fr;
+            align-items: stretch;
+            background: var(--ink)
+        }
+
+        .anchor .cell {
+            padding: 28px 30px;
+            color: var(--white)
+        }
+
+        .anchor .cell.them {
+            background: #242A31
+        }
+
+        .anchor .cell.us {
+            background: #17463D
+        }
+
+        .anchor .cap {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: #8C949C;
+            margin-bottom: 12px
+        }
+
+        .anchor .cell.us .cap {
+            color: #7FCBB6
+        }
+
+        .anchor .num {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: clamp(32px, 5vw, 52px);
+            line-height: .9
+        }
+
+        .anchor .cell.them .num {
+            color: #E88C85;
+            text-decoration: line-through;
+            text-decoration-thickness: 3px
+        }
+
+        .anchor .cell.us .num {
+            color: var(--hazard)
+        }
+
+        .anchor .sub2 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: #A9B1B9;
+            margin-top: 12px;
+            line-height: 1.75
+        }
+
+        .anchor .cell.us .sub2 {
+            color: #9DC9BE
+        }
+
+        .anchor .mid {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--ink);
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 24px;
+            color: var(--hazard)
+        }
+
+        .saveband {
+            background: var(--hazard);
+            color: var(--ink);
+            padding: 15px 30px;
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            font-weight: 600;
+            text-align: center
+        }
+
+        .techgrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(232px, 1fr));
+            gap: 1px;
+            background: var(--line);
+            border: 1px solid var(--line);
+            margin: 22px 0
+        }
+
+        .tech {
+            background: var(--white);
+            padding: 20px
+        }
+
+        .tech .ic {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--white);
+            background: var(--deep);
+            display: inline-block;
+            padding: 4px 9px;
+            border-radius: 3px;
+            margin-bottom: 11px
+        }
+
+        .tech .tt {
+            font-family: var(--display);
+            font-weight: 700;
+            font-size: 21px;
+            text-transform: uppercase;
+            line-height: 1.05;
+            margin-bottom: 8px
+        }
+
+        .tech p {
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 9px
+        }
+
+        .tech .gain {
+            font-family: var(--mono);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--signal)
+        }
+
+        .qrow {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap
+        }
+
+        .qbtn {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, .25);
+            color: #A9B1B9;
+            border-radius: 3px;
+            padding: 6px 13px;
+            cursor: pointer;
+            text-transform: uppercase
+        }
+
+        .qbtn:hover {
+            background: rgba(255, 255, 255, .08);
+            color: #fff
+        }
+
+        .qbtn.on {
+            background: var(--hazard);
+            color: var(--ink);
+            border-color: var(--hazard);
+            font-weight: 600
+        }
+
+        .split {
+            display: flex;
+            height: 38px;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px
+        }
+
+        .split div {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            transition: width .18s ease
+        }
+
+        .split .s1 {
+            background: var(--deep);
+            color: #fff
+        }
+
+        .split .s2 {
+            background: var(--hazard);
+            color: var(--ink)
+        }
+
+        .splitlbl {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--slate);
+            margin-top: 8px
+        }
+
         @media (max-width:720px) {
             .level-body .cols {
                 grid-template-columns: 1fr
+            }
+
+            .anchor {
+                grid-template-columns: 1fr
+            }
+
+            .anchor .mid {
+                padding: 8px 0;
+                transform: rotate(90deg)
             }
 
             .calc-body {
@@ -781,9 +1006,17 @@
             .tbl tr.hi td,
             .call,
             .ref,
-            .sug.pick {
+            .sug.pick,
+            .anchor .cell,
+            .saveband,
+            .tech .ic,
+            .split div {
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact
+            }
+
+            .anchorbox {
+                page-break-inside: avoid
             }
         }
     </style>
@@ -802,8 +1035,9 @@
             <div class="eyebrow">Trilha de formação alinhada à NR-11 + modelo comercial enxuto</div>
             <h1>Trilha do operador e o que cobrar — margem mínima</h1>
             <p class="sub">Índice de formação em 6 níveis, na ordem oficial de ensino da NR-11, com mini-testes e
-                micro-games. Depois, duas calculadoras — PoC e projeto completo — no modo de menor margem viável para
-                entrar competitivo e ganhar o cliente.</p>
+                micro-games. Depois a estratégia comercial: ancoragem contra o simulador importado, a stack de IA e
+                scanner 3D que justifica entregar mais rápido e mais barato, e três calculadoras — PoC, projeto completo
+                e escala 10×/100× com break-even e divisão do lucro.</p>
         </div>
 
         <section>
@@ -1093,6 +1327,252 @@
 
         <section>
             <div class="shead"><span class="snum">04</span>
+                <h2>Ancoragem — o que isso custaria comprado lá fora</h2>
+            </div>
+            <p class="lede">Os enterprise não publicam preço, então reconstruímos o orçamento linha a linha, do jeito que
+                ele chega ao cliente brasileiro: hardware + conteúdo custom + licença + implantação + imposto de
+                importação. <strong>Esse é o número que a Natura ouviria antes de falar com a gente.</strong> Apresente
+                ele primeiro. Sempre.</p>
+
+            <table class="tbl">
+                <caption>Reconstrução — programa importado equivalente · 1 estação · ano 1 · USD/BRL 5,08</caption>
+                <thead>
+                    <tr>
+                        <th>Linha do orçamento</th>
+                        <th class="n">US$</th>
+                        <th class="n">R$</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Estação com base de movimento (1 un.)</td>
+                        <td class="n">55.000</td>
+                        <td class="n">279.400</td>
+                    </tr>
+                    <tr class="hi">
+                        <td>Conteúdo custom — CD real, layout, SKUs, procedimentos</td>
+                        <td class="n">95.000</td>
+                        <td class="n">482.600</td>
+                    </tr>
+                    <tr>
+                        <td>Integração com LMS + relatórios de desempenho</td>
+                        <td class="n">25.000</td>
+                        <td class="n">127.000</td>
+                    </tr>
+                    <tr>
+                        <td>Implantação + formação de instrutor (técnico em viagem)</td>
+                        <td class="n">18.000</td>
+                        <td class="n">91.440</td>
+                    </tr>
+                    <tr>
+                        <td>Licença anual por estação — ano 1</td>
+                        <td class="n">9.000</td>
+                        <td class="n">45.720</td>
+                    </tr>
+                    <tr>
+                        <td>Suporte / SLA — ano 1</td>
+                        <td class="n">7.000</td>
+                        <td class="n">35.560</td>
+                    </tr>
+                    <tr>
+                        <td>Impostos de importação sobre hardware (~70% efetivo)</td>
+                        <td class="n">—</td>
+                        <td class="n">195.580</td>
+                    </tr>
+                    <tr>
+                        <td>Frete internacional, seguro e despacho aduaneiro</td>
+                        <td class="n">—</td>
+                        <td class="n">30.000</td>
+                    </tr>
+                    <tr class="total">
+                        <td>Total ano 1 — uma única estação</td>
+                        <td class="n">209.000</td>
+                        <td class="n">1.287.300</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="sm">Reconstrução de custo com base em faixas públicas de mercado para simuladores enterprise de
+                equipamento pesado — <strong>não é uma cotação recebida</strong>. Serve para ancorar a conversa e para
+                dimensionar o esforço real; se a Natura trouxer uma proposta concreta, é ela que vale.</p>
+
+            <div class="anchorbox">
+                <div class="anchor">
+                    <div class="cell them">
+                        <div class="cap">Importado · Suécia ou Canadá · ano 1</div>
+                        <div class="num">R$ 1.287.300</div>
+                        <div class="sub2">1 estação física · conteúdo adaptado<br>prazo 9 a 14 meses · suporte em
+                            inglês<br>cada posto novo custa quase o mesmo</div>
+                    </div>
+                    <div class="mid">→</div>
+                    <div class="cell us">
+                        <div class="cap">Nosso projeto completo</div>
+                        <div class="num" id="anUs">R$ 420.000</div>
+                        <div class="sub2">headsets ilimitados na planta · Quest 3<br>prazo 6 meses · time em
+                            português<br>conteúdo nativo NR-11, feito no CD real</div>
+                    </div>
+                </div>
+                <div class="saveband" id="anSave">Economia de R$ 867.300 — 67% abaixo do importado</div>
+            </div>
+
+            <p class="lede">E a diferença não é só na entrada. É na hora de escalar que o modelo importado quebra:</p>
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th>Cenário</th>
+                        <th class="n">Importado</th>
+                        <th class="n">Nós</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1ª planta — programa completo</td>
+                        <td class="n">R$ 1.287.300</td>
+                        <td class="n" id="anRow1">R$ 420.000</td>
+                    </tr>
+                    <tr class="hi">
+                        <td>Cada posto adicional na mesma planta</td>
+                        <td class="n">+ R$ 535.000</td>
+                        <td class="n">+ R$ 4.000 <span class="sm">(um Quest 3)</span></td>
+                    </tr>
+                    <tr>
+                        <td>2ª planta / novo CD</td>
+                        <td class="n">+ R$ 1.100.000</td>
+                        <td class="n">+ R$ 60.000 <span class="sm">(re-scan do layout)</span></td>
+                    </tr>
+                    <tr>
+                        <td>Manutenção recorrente</td>
+                        <td class="n">US$ 9.000/estação/ano</td>
+                        <td class="n">R$ 8.000/mês por planta</td>
+                    </tr>
+                    <tr>
+                        <td>Prazo até a 1ª turma formada</td>
+                        <td class="n">9 a 14 meses</td>
+                        <td class="n">6 meses</td>
+                    </tr>
+                    <tr>
+                        <td>Conteúdo em PT-BR aderente à NR-11</td>
+                        <td class="n">traduzido / adaptado</td>
+                        <td class="n">nativo</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="call">
+                <div class="lbl">A terceira âncora — o estúdio XR nacional</div>
+                <p>Se a Natura pedir cotação para um estúdio de VR brasileiro comum, o escopo desta trilha exige um time
+                    de <strong>8 a 9 pessoas por 9 meses</strong> — modelagem 3D manual de galpão, empilhadeira, racks e
+                    SKUs; backend do zero; QA manual. Custo de time ~R$ 740.000, preço ao cliente na faixa de
+                    <strong>R$ 950.000 a R$ 1,1 milhão</strong>. A escada de preço fica assim: importado R$ 1,29M →
+                    estúdio nacional ~R$ 1,0M → <strong>nós, R$ 420k</strong>. Nós não somos os baratos da lista: somos
+                    os que produzem diferente. A próxima seção é a prova disso.</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="shead"><span class="snum">05</span>
+                <h2>Por que entregamos mais rápido e mais barato</h2>
+            </div>
+            <p class="lede">A pergunta que o cliente vai fazer — e ele vai fazer — é <em>"por que vocês custam um terço
+                    do concorrente? O que está faltando?"</em>. A resposta não é "cortamos escopo". É que a nossa linha
+                de produção é outra. Quatro peças de tecnologia que o estúdio tradicional e o fornecedor importado não
+                têm no fluxo:</p>
+
+            <div class="techgrid">
+                <div class="tech">
+                    <div class="ic">01 · Geração 3D</div>
+                    <div class="tt">IA generativa de ativos 3D</div>
+                    <p>Racks, paletes, caixas, SKUs, sinalização, variações de galpão. O que era semanas de modelagem
+                        manual por artista vira horas de geração dirigida + ajuste fino.</p>
+                    <div class="gain">Modelagem de ativos: 6–8 semanas → 1 semana</div>
+                </div>
+                <div class="tech">
+                    <div class="ic">02 · Captura</div>
+                    <div class="tt">Scanner 3D em campo</div>
+                    <p>Digitalizamos o CD real da Natura e a empilhadeira exata que o operador vai usar. O treino
+                        acontece no galpão dele, com as embalagens dele — não num armazém genérico sueco.</p>
+                    <div class="gain">Fidelidade que o importado não vende a nenhum preço</div>
+                </div>
+                <div class="tech">
+                    <div class="ic">03 · Agentes</div>
+                    <div class="tt">Agentes de IA no desenvolvimento</div>
+                    <p>Backend, API, dashboard do instrutor, quizzes, telemetria e testes escritos e revisados com
+                        agentes. O dev deixa de digitar boilerplate e passa a dirigir arquitetura.</p>
+                    <div class="gain">Backend e dashboard: 8 semanas → 2–3 semanas</div>
+                </div>
+                <div class="tech">
+                    <div class="ic">04 · MCP</div>
+                    <div class="tt">MCP — agente dentro da Unity</div>
+                    <p>Via Model Context Protocol o agente opera direto na engine e no repositório: monta cena, cria
+                        prefab, liga telemetria, roda build. Não sugere código — executa.</p>
+                    <div class="gain">Ciclo de iteração de dias para horas</div>
+                </div>
+            </div>
+
+            <table class="tbl">
+                <caption>Onde o tempo (e o dinheiro do cliente) desaparece</caption>
+                <thead>
+                    <tr>
+                        <th>Etapa do projeto</th>
+                        <th>Estúdio tradicional</th>
+                        <th class="n">Com a nossa stack</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Galpão, racks e ativos 3D</td>
+                        <td>6–8 semanas de artista 3D</td>
+                        <td class="n">1 semana · −85%</td>
+                    </tr>
+                    <tr class="hi">
+                        <td>Empilhadeira e variantes de máquina</td>
+                        <td>3 semanas por modelo</td>
+                        <td class="n">3 dias · −85%</td>
+                    </tr>
+                    <tr>
+                        <td>Backend, API, banco e dashboard</td>
+                        <td>8 semanas</td>
+                        <td class="n">2–3 semanas · −65%</td>
+                    </tr>
+                    <tr>
+                        <td>Conteúdo dos 6 níveis + quizzes</td>
+                        <td>5 semanas</td>
+                        <td class="n">1,5 semana · −70%</td>
+                    </tr>
+                    <tr>
+                        <td>QA, testes e builds</td>
+                        <td>1 pessoa dedicada, contínuo</td>
+                        <td class="n">automatizado · −50%</td>
+                    </tr>
+                    <tr class="total">
+                        <td>Time necessário · prazo</td>
+                        <td>8–9 pessoas · 9 meses</td>
+                        <td class="n">4 pessoas · 6 meses</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="call ok">
+                <div class="lbl">A frase que fecha a objeção de preço</div>
+                <p><strong>"Não estamos cobrando menos porque entregamos menos. Estamos cobrando menos porque custa menos
+                        para nós produzir o mesmo resultado — e escolhemos repassar isso."</strong> A margem do projeto é
+                    a mesma que um estúdio tradicional teria. A diferença inteira está no custo de produção, não no
+                    escopo. Deixe isso explícito: preço baixo sem explicação vira suspeita de qualidade; preço baixo com
+                    causa vira vantagem competitiva.</p>
+            </div>
+
+            <div class="call">
+                <div class="lbl">Roteiro da reunião — a ordem importa mais que os números</div>
+                <p><strong>1.</strong> Custo de não treinar: multa acima de R$ 10.000 por operador não habilitado +
+                    responsabilidade civil. <strong>2.</strong> O que o mercado cobra: R$ 1,29 milhão importado, ~R$ 1,0
+                    milhão em estúdio nacional. <strong>3.</strong> Por que somos diferentes: scanner 3D no CD dele, IA
+                    de ativos, agentes, MCP — time de 4 entregando o que um time de 9 entregaria. <strong>4.</strong> Só
+                    então o preço: <strong>R$ 420 mil</strong>. Nessa ordem o número chega como alívio. Na ordem inversa,
+                    chega como negociação.</p>
+            </div>
+        </section>
+
+        <section>
+            <div class="shead"><span class="snum">06</span>
                 <h2>Calculadora — PoC</h2>
             </div>
             <p class="lede">A prova de conceito, no modo enxuto. Ajuste as horas de cada frente e o valor da hora. O
@@ -1168,7 +1648,7 @@
         </section>
 
         <section>
-            <div class="shead"><span class="snum">05</span>
+            <div class="shead"><span class="snum">07</span>
                 <h2>Calculadora — projeto completo</h2>
             </div>
             <p class="lede">O projeto de 6 meses, também no modo enxuto. Ajuste a remuneração de cada papel. O
@@ -1266,6 +1746,177 @@
             </div>
         </section>
 
+        <section>
+            <div class="shead"><span class="snum">08</span>
+                <h2>Escala — 10× e 100× · retorno do investimento</h2>
+            </div>
+            <p class="lede">A Natura paga o <strong>build</strong>. Da segunda venda em diante você não está mais
+                construindo um produto — está <strong>replicando</strong> um. O primeiro projeto é o investimento; o
+                resto é margem. Esta calculadora responde três coisas: qual preço por unidade paga o investimento em N
+                vendas, em qual venda você vira o jogo, e quanto disso volta para a empresa e quanto sai como lucro seu.
+            </p>
+
+            <div class="calc">
+                <div class="calc-head"><span>Painel — escala, break-even e divisão do lucro</span><button class="reset"
+                        onclick="resetScale()">Restaurar padrão</button></div>
+                <div class="calc-body">
+                    <div class="calc-controls">
+                        <div class="roleblock">
+                            <div class="rn">O investimento — construir o produto uma vez</div>
+                            <div class="gctrl"><label>Custo do build <span class="val">R$ <span>300</span>k</span></label>
+                                <input type="range" id="s0" min="150" max="600" value="300" step="10"
+                                    oninput="recalcScale()"></div>
+                            <div class="gctrl"><label>Operação fixa <span class="val">R$ <span>40</span>k/mês</span></label>
+                                <input type="range" id="s5" min="10" max="150" value="40" step="5"
+                                    oninput="recalcScale()"></div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">A venda — quanto entra por cliente</div>
+                            <div class="gctrl"><label>Preço por implantação <span class="val">R$ <span>180</span>k</span></label>
+                                <input type="range" id="s1" min="40" max="450" value="180" step="5"
+                                    oninput="recalcScale()"></div>
+                            <div class="gctrl"><label>Recorrente <span class="val">R$ <span>8</span>k/mês</span></label>
+                                <input type="range" id="s4" min="0" max="30" value="8" step="1"
+                                    oninput="recalcScale()"></div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">O custo de replicar — onde a stack de IA paga</div>
+                            <div class="gctrl"><label>Custo por cliente novo <span class="val">R$ <span>45</span>k</span></label>
+                                <input type="range" id="s2" min="10" max="150" value="45" step="5"
+                                    oninput="recalcScale()"></div>
+                            <div class="gctrl"><label>Imposto <span class="val"><span>15</span>%</span></label>
+                                <input type="range" id="s6" min="6" max="30" value="15" step="1"
+                                    oninput="recalcScale()"></div>
+                        </div>
+                        <div class="roleblock">
+                            <div class="rn">Escala e divisão do lucro</div>
+                            <div class="gctrl"><label>Clientes no ano <span class="val"><span>10</span>×</span></label>
+                                <input type="range" id="s3" min="1" max="100" value="10" step="1"
+                                    oninput="recalcScale()"></div>
+                            <div class="qrow"><button class="qbtn" onclick="setQty(1)">1×</button><button class="qbtn"
+                                    onclick="setQty(10)">10×</button><button class="qbtn"
+                                    onclick="setQty(50)">50×</button><button class="qbtn"
+                                    onclick="setQty(100)">100×</button></div>
+                            <div class="gctrl" style="margin-top:14px"><label>Reinvestido na empresa <span
+                                        class="val"><span>40</span>%</span></label><input type="range" id="s7" min="0"
+                                    max="80" value="40" step="5" oninput="recalcScale()"></div>
+                        </div>
+                    </div>
+                    <div class="calc-out">
+                        <div class="orow">
+                            <div class="k">Receita no ano — implantação + recorrente</div>
+                            <div class="big" id="scRev">R$ 2.760.000</div>
+                            <div class="note" id="scRevNote">10 × R$ 180.000 + recorrente R$ 960.000</div>
+                        </div>
+                        <div class="odiv"></div>
+                        <div class="orow">
+                            <div class="k">Custos + impostos + investimento</div>
+                            <div class="big" id="scCost">R$ 1.932.000</div>
+                            <div class="note" id="scCostNote">replicação · suporte · fixo · imposto · build</div>
+                        </div>
+                        <div class="odiv"></div>
+                        <div class="orow hot">
+                            <div class="k">Lucro líquido do ano</div>
+                            <div class="big" id="scProfit">R$ 828.000</div>
+                            <div class="note" id="scRoi">retorno de 276% sobre o build</div>
+                            <div id="scFlag"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="lede" style="margin-top:26px">Qual preço você precisa cobrar por empresa para o investimento se
+                pagar dentro de N vendas — já descontando imposto, custo de replicar e a operação fixa do ano:</p>
+            <div class="suggest">
+                <div class="sug">
+                    <div class="lbl">Para se pagar em 10 vendas</div>
+                    <div class="amt" id="scP10">R$ 83.000</div>
+                    <div class="desc">preço mínimo por implantação com 10 clientes no ano</div>
+                </div>
+                <div class="sug">
+                    <div class="lbl">Para se pagar em 50 vendas</div>
+                    <div class="amt" id="scP50">R$ 53.000</div>
+                    <div class="desc">o build já virou detalhe — manda o custo de replicar</div>
+                </div>
+                <div class="sug pick">
+                    <div class="lbl">Para se pagar em 100 vendas</div>
+                    <div class="amt" id="scP100">R$ 53.000</div>
+                    <div class="desc">piso técnico: abaixo disso cada venda dá prejuízo sozinha</div>
+                </div>
+            </div>
+
+            <div class="call ok">
+                <div class="lbl">Break-even — em qual venda você vira o jogo</div>
+                <p id="scBe">Com o preço atual, o investimento e a operação do ano se pagam na <strong>5ª venda</strong>.
+                    Da 6ª em diante, cada contrato novo é margem.</p>
+            </div>
+
+            <p class="lede">Divisão do lucro — quanto volta para a empresa e quanto é seu:</p>
+            <div class="split">
+                <div class="s1" id="scS1" style="width:40%">Reinvestimento 40%</div>
+                <div class="s2" id="scS2" style="width:60%">Lucro 60%</div>
+            </div>
+            <div class="splitlbl"><span id="scReinv">R$ 331.200 · reinvestido</span><span id="scTake">R$ 496.800 ·
+                    retirada</span></div>
+
+            <table class="tbl" style="margin-top:26px">
+                <caption>Para onde vai o reinvestimento — o que ele compra na prática</caption>
+                <thead>
+                    <tr>
+                        <th>Destino</th>
+                        <th>O que resolve</th>
+                        <th class="n">Fatia sugerida</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="hi">
+                        <td>Reserva de caixa</td>
+                        <td>6 meses de folha. É o que permite dizer não a contrato ruim</td>
+                        <td class="n">35%</td>
+                    </tr>
+                    <tr>
+                        <td>Produto — biblioteca reutilizável</td>
+                        <td>Cada ativo, cena e módulo virado em componente derruba o custo de replicar</td>
+                        <td class="n">25%</td>
+                    </tr>
+                    <tr>
+                        <td>Equipamento — scanner, headsets, máquinas</td>
+                        <td>Capacidade de rodar dois projetos ao mesmo tempo</td>
+                        <td class="n">15%</td>
+                    </tr>
+                    <tr>
+                        <td>Comercial — quem vende enquanto você produz</td>
+                        <td>O gargalo do 10× não é técnico, é de pipeline de vendas</td>
+                        <td class="n">15%</td>
+                    </tr>
+                    <tr>
+                        <td>Novos verticais</td>
+                        <td>Ponte rolante, plataforma elevatória, NR-10, NR-35 — mesmo motor</td>
+                        <td class="n">10%</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="call">
+                <div class="lbl">A leitura estratégica que essa conta revela</div>
+                <p>Mexa no slider de <strong>custo por cliente novo</strong> e veja o preço mínimo despencar. Acima de
+                    ~20 clientes o custo do build vira irrelevante — <strong>quem manda no seu preço mínimo é o custo de
+                        replicar</strong>. Cada real cortado ali vira lucro direto, multiplicado por todo cliente futuro.
+                    É exatamente aí que o scanner 3D, a IA de ativos e o MCP deixam de ser argumento de venda e viram
+                    ativo financeiro: eles são o que separa um preço mínimo de R$ 90 mil de um de R$ 40 mil. E é isso que
+                    torna o 100× possível sem virar uma consultoria de 60 pessoas.</p>
+            </div>
+
+            <div class="call ok">
+                <div class="lbl">Ordem de venda que respeita a conta</div>
+                <p>Não venda a R$ 53 mil no cliente 1. A Natura é o <strong>caso âncora</strong> e paga o build cheio (R$
+                    420 mil) — é ela que financia o produto e vira a referência de mercado. Os preços de replicação
+                    acima só entram <strong>depois</strong> do produto pronto e do case documentado, e servem para o
+                    volume: operadores logísticos, transportadoras, redes de varejo. Preço de escala aplicado cedo demais
+                    queima o caso âncora e você fica sem os dois.</p>
+            </div>
+        </section>
+
     </div>
 
     <footer>
@@ -1323,8 +1974,74 @@
             if (price < 300000) { f.innerHTML = '<span class="flag low">abaixo do piso · desvaloriza o build</span>'; }
             else if (price > 600000) { f.innerHTML = '<span class="flag warn">acima da faixa · pode assustar a Natura</span>'; }
             else { f.innerHTML = '<span class="flag ok">faixa saudável R$ 380–480k</span>'; }
+
+            /* espelha o preço na ancoragem da seção 04 */
+            document.getElementById("anUs").textContent = brl(price);
+            document.getElementById("anRow1").textContent = brl(price);
+            const eco = IMPORTADO - price, band = document.getElementById("anSave");
+            if (eco > 0) { band.textContent = "Economia de " + brl(eco) + " — " + Math.round(eco / IMPORTADO * 100) + "% abaixo do importado"; band.style.background = "var(--hazard)"; band.style.color = "var(--ink)"; }
+            else { band.textContent = "Acima da referência importada — a ancoragem deixa de funcionar"; band.style.background = "var(--signal)"; band.style.color = "#fff"; }
         }
         function resetProj() { for (const id in prDef) { document.getElementById(id).value = prDef[id]; } recalcProj(); }
+
+        /* --- Escala, break-even e divisão do lucro (seção 08) --- */
+        const IMPORTADO = 1287300;
+        const scDef = { s0: 300, s1: 180, s2: 45, s3: 10, s4: 8, s5: 40, s6: 15, s7: 40 };
+        const gv = id => +document.getElementById(id).value;
+        const up1k = v => Math.ceil(v / 1000) * 1000;
+
+        function recalcScale() {
+            for (const id in scDef) setLbl(id, gv(id));
+            const I = gv("s0") * 1000, P = gv("s1") * 1000, Cr = gv("s2") * 1000, N = gv("s3");
+            const R = gv("s4") * 1000, F = gv("s5") * 1000, t = gv("s6") / 100, rein = gv("s7") / 100;
+
+            const revImp = N * P, revRec = N * R * 12, rev = revImp + revRec;
+            const cRep = N * Cr, cSup = revRec * 0.30, cFix = F * 12, tax = rev * t;
+            const custos = cRep + cSup + cFix + tax + I;
+            const lucro = rev - custos;
+
+            document.getElementById("scRev").textContent = brl(rev);
+            document.getElementById("scRevNote").textContent = N + " × " + brl(P) + " + recorrente " + brl(revRec);
+            document.getElementById("scCost").textContent = brl(custos);
+            document.getElementById("scCostNote").textContent = "replicação " + brl(cRep) + " · suporte " + brl(cSup) + " · fixo " + brl(cFix) + " · imposto " + brl(tax) + " · build " + brl(I);
+            document.getElementById("scProfit").textContent = brl(lucro);
+            document.getElementById("scRoi").textContent = lucro > 0 ? "retorno de " + Math.round(lucro / I * 100) + "% sobre o build" : "ainda não pagou o build";
+
+            /* contribuição de cada cliente para cobrir build + operação fixa */
+            const contrib = P * (1 - t) + R * 12 * (1 - t) - 0.30 * R * 12 - Cr;
+            const fixo = I + cFix;
+            const be = contrib > 0 ? Math.ceil(fixo / contrib) : null;
+
+            const f = document.getElementById("scFlag");
+            if (contrib <= 0) f.innerHTML = '<span class="flag warn">preço abaixo do custo de replicar · cada venda dá prejuízo</span>';
+            else if (be > N) f.innerHTML = '<span class="flag low">break-even só na ' + be + 'ª venda · volume ainda insuficiente</span>';
+            else f.innerHTML = '<span class="flag ok">pago na ' + be + 'ª venda · o resto é margem</span>';
+
+            const beTxt = document.getElementById("scBe");
+            if (contrib <= 0) beTxt.innerHTML = 'Com esse preço <strong>não existe break-even</strong>: cada cliente novo custa mais para atender do que traz. Suba o preço por implantação ou derrube o custo de replicar antes de pensar em volume.';
+            else beTxt.innerHTML = 'Com o preço atual, o build e a operação do ano se pagam na <strong>' + be + 'ª venda</strong>. Da ' + (be + 1) + 'ª em diante, cada contrato novo é margem — cada cliente contribui <strong>' + brl(contrib) + '</strong> por ano.';
+
+            /* preço mínimo por implantação para se pagar em N vendas */
+            const piso = Cr / (1 - t);
+            const precoPara = n => Math.max((fixo / n + Cr - R * 12 * (1 - t) + 0.30 * R * 12) / (1 - t), piso);
+            document.getElementById("scP10").textContent = brl(up1k(precoPara(10)));
+            document.getElementById("scP50").textContent = brl(up1k(precoPara(50)));
+            document.getElementById("scP100").textContent = brl(up1k(precoPara(100)));
+
+            /* divisão do lucro */
+            const pos = Math.max(0, lucro), reinv = pos * rein, take = pos - reinv;
+            const pr = Math.round(rein * 100);
+            const s1 = document.getElementById("scS1"), s2 = document.getElementById("scS2");
+            s1.style.width = pr + "%"; s2.style.width = (100 - pr) + "%";
+            s1.textContent = pr >= 14 ? "Reinveste " + pr + "%" : "";
+            s2.textContent = (100 - pr) >= 14 ? "Lucro " + (100 - pr) + "%" : "";
+            document.getElementById("scReinv").textContent = brl(reinv) + " · reinvestido";
+            document.getElementById("scTake").textContent = brl(take) + " · retirada";
+
+            document.querySelectorAll(".qbtn").forEach(b => b.classList.toggle("on", +b.textContent.replace("×", "") === N));
+        }
+        function setQty(n) { document.getElementById("s3").value = n; recalcScale(); }
+        function resetScale() { for (const id in scDef) { document.getElementById(id).value = scDef[id]; } recalcScale(); }
 
         function copySummary(btn) {
             const team = document.getElementById("oTeam").textContent, cost = document.getElementById("oCost").textContent;
@@ -1348,13 +2065,30 @@ Estrutura de cobrança:
 - Recorrente: a partir de R$ 8.000/mês por planta (cobre manutenção)
 
 Posicionamento: acima do app de loja (~R$ 76), abaixo do simulador
-importado sob cotação (Tenstar/CM Labs/Serious Labs).`;
+importado sob cotação (Tenstar/CM Labs/Serious Labs).
+
+ANCORAGEM (usar nesta ordem na reunião):
+1. Custo de nao treinar: multa +R$ 10.000 por operador
+2. Importado equivalente, ano 1, 1 estacao: R$ 1.287.300
+3. Estudio XR nacional sem nossa stack: ~R$ 1.000.000
+4. Nosso preco: ${price}
+Por que somos mais baratos: scanner 3D no CD do cliente, IA generativa
+de ativos 3D, agentes de IA e MCP dentro da Unity. Time de 4 entrega o
+que um time de 9 entregaria — mesma margem, custo de producao menor.
+
+ESCALA (ver secao 08):
+Preco minimo por implantacao para se pagar em 10 vendas: ${document.getElementById("scP10").textContent}
+Em 50 vendas: ${document.getElementById("scP50").textContent} · em 100 vendas: ${document.getElementById("scP100").textContent}
+Cenario atual: lucro ${document.getElementById("scProfit").textContent} no ano
+  ${document.getElementById("scReinv").textContent} / ${document.getElementById("scTake").textContent}
+Regra: a Natura e o caso ancora e paga o build cheio. Preco de
+replicacao so entra depois do produto pronto e do case documentado.`;
             navigator.clipboard.writeText(txt).then(() => {
                 btn.textContent = "Copiado ✓"; btn.classList.add("done");
                 setTimeout(() => { btn.textContent = "Copiar resumo para o sócio"; btn.classList.remove("done"); }, 2200);
             });
         }
-        recalcPoc(); recalcProj();
+        recalcPoc(); recalcScale(); recalcProj();
     </script>
 </body>
 
