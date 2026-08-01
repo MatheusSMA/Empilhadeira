@@ -122,6 +122,9 @@ export function createScene(canvas) {
         applyDpr();
         renderer.setSize(w, vh, true);   // updateStyle: o style inline ancora no topo
         document.body.classList.toggle('portrait', retrato);
+        // O console de controle ocupa EXATAMENTE a faixa abaixo do canvas — sem
+        // isto sobra uma tira cinza morta que lê como layout quebrado.
+        document.documentElement.style.setProperty('--canvasH', vh + 'px');
     }
     applyDpr();
     resize();

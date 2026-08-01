@@ -206,19 +206,23 @@
                 <span><b>R</b> reiniciar</span>
             </div>
 
-            <div class="touchui">
-                <div class="stick-zone" id="stickZone">
+            <!-- Painel de controle. Posição por GRID, nunca por offset absoluto:
+                 a versão anterior usava números mágicos e dois botões acabaram
+                 exatamente em cima um do outro. -->
+            <div class="deck">
+                <div class="deck-stick" id="stickZone">
                     <div class="stick" id="stick">
                         <i id="stickKnob"></i>
                     </div>
+                    <div class="deck-k">Dirigir</div>
                 </div>
-                <div class="btn-zone">
-                    <div class="tbtn fork up" data-btn="forkUp">▲</div>
-                    <div class="tbtn fork dn" data-btn="forkDown">▼</div>
-                    <div class="tbtn tilt f" data-btn="tiltFwd">Torre ◄</div>
-                    <div class="tbtn tilt b" data-btn="tiltBack">Torre ►</div>
-                    <div class="tbtn aux back" data-btn="back">Trás</div>
-                    <div class="tbtn aux cam" data-btn="cam">Câm</div>
+                <div class="deck-btns">
+                    <div class="tbtn big" data-btn="forkUp">▲<em>Erguer</em></div>
+                    <div class="tbtn big" data-btn="forkDown">▼<em>Abaixar</em></div>
+                    <div class="tbtn" data-btn="tiltFwd">Torre ◄</div>
+                    <div class="tbtn" data-btn="tiltBack">Torre ►</div>
+                    <div class="tbtn" data-btn="back">Trás</div>
+                    <div class="tbtn" data-btn="cam">Câmera</div>
                 </div>
             </div>
         </div>
