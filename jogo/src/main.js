@@ -1,4 +1,4 @@
-/* main.js — boot, loop e ligação com a HUD.
+/* main.js — boot, loop e ligação.
  *
  * Dev local: módulos ES exigem origem HTTP, `file://` não funciona.
  *   python -m http.server 8000     (na raiz do repo)  →  http://localhost:8000/jogo/
@@ -8,6 +8,9 @@ import * as THREE from 'three';
 import { createScene } from './scene.js';
 import { createForklift } from './forklift.js';
 import { buildWarehouse, resolveCollision, unstick } from './warehouse.js';
+import { createPalletSystem } from './pallet.js';
+import { createMission } from './mission.js';
+import { createHud } from './hud.js';
 import { input } from './input.js';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -26,9 +29,12 @@ try {
 const { renderer, scene, camera, quality, followSun } = ctx;
 
 const world = buildWarehouse(scene);
-
 const forklift = createForklift();
 scene.add(forklift.root);
+
+const palletSys = createPalletSystem({ scene, forklift });
+const hud = createHud(document.querySelector('.hud'));
+const mission = createMission({ scene, forklift, palletSys, hud });
 
 /* ---------- estado do loop ---------- */
 const STEP = 1 / 60;
@@ -36,14 +42,26 @@ let last = performance.now();
 let acc = 0;
 let fps = 60;
 
+/** Ordem obrigatória: palletSys.reset() reparenteia o palete carregado de volta
+ *  para a cena ANTES de removê-lo. Invertendo, ele fica pendurado no carriage e
+ *  some do mundo. E camera.snapTo por último, porque zera estado que não vive
+ *  dentro de forklift.reset(). */
 function respawn() {
+    palletSys.reset();
     forklift.reset(world.spawn.x, world.spawn.z, world.spawn.yaw);
+    mission.begin();
     camera.snapTo(forklift.state);
     acc = 0;
 }
 
-input.init();
+input.init({
+    look: (dx, dy, recenter) => {
+        if (recenter) camera.recenterLook();
+        else camera.look(dx, dy);
+    },
+});
 respawn();
+camera.playIntro();
 
 /* ---------- HUD ---------- */
 const el = {
@@ -59,7 +77,7 @@ if (DEBUG) {
 
 const fmt = (n, d = 1) => n.toFixed(d).replace('.', ',');
 let hudAcc = 0;
-function updateHud(dt) {
+function updateReadout(dt) {
     hudAcc += dt;
     if (hudAcc < 0.1) return;   // 10 Hz basta e evita layout thrash
     hudAcc = 0;
@@ -70,7 +88,9 @@ function updateHud(dt) {
         dbg.textContent =
             `${fps.toFixed(0)} fps · ${renderer.info.render.calls} draws · tier ${quality.tier}\n` +
             `v ${fmt(s.v, 2)} · δ ${fmt(THREE.MathUtils.radToDeg(s.delta), 0)}° · ` +
-            `ω ${fmt(s.omega, 2)} · aLat ${fmt(s.aLat, 1)} · ${input.source}`;
+            `ω ${fmt(s.omega, 2)} · aLat ${fmt(s.aLat, 1)}\n` +
+            `garfo ${fmt(s.forkY, 2)} · tilt ${fmt(THREE.MathUtils.radToDeg(s.tilt), 1)}° · ` +
+            `cam ${camera.mode} · ${input.source}`;
     }
 }
 
@@ -87,26 +107,38 @@ function frame(now) {
     input.beginFrame();
 
     if (input.pressed('retry')) respawn();
+    if (input.pressed('cam')) camera.toggle();
+    camera.setLookBack(input.held.back);
+
+    const s = forklift.state;
 
     // passo fixo: o feel tem que ser idêntico em 60 e 120 Hz
-    const s = forklift.state;
     acc = Math.min(acc + dt, 0.2);
     while (acc >= STEP) {
         acc -= STEP;
         forklift.step(STEP, input.axes);
         const hit = resolveCollision(s, world.colliders);
         if (hit) {
-            if (unstick(s, world.colliders)) camera.snapTo(s);   // rede de segurança
-            // step() já escreveu no grafo; a colisão mexeu no estado depois dele
+            // Em 1ª pessoa um salto em espiral é teleporte do ponto de vista —
+            // gatilho clássico de desorientação. Corte em preto enjoa muito menos.
+            if (unstick(s, world.colliders)) camera.blackout(140);
             forklift.root.position.set(s.x, 0, s.z);
-            if (hit.speed > 0.9) camera.kick(hit.speed * 0.05);
+            if (hit.speed > 0.9) { camera.kick(hit.speed * 0.05); mission.onCollision(hit); }
         }
     }
 
+    // candidate() usa worldToLocal; step() escreve root.position sem atualizar a
+    // matriz de mundo. Sem isto lê a pose do frame ANTERIOR — 5 cm a 3 m/s.
+    forklift.root.updateMatrixWorld(true);
+
+    mission.update(dt, input);
+    palletSys.update(dt);
+
     followSun(s);
-    camera.update(dt, s);
+    camera.update(dt, s, forklift.body);
+    hud.update(dt, camera.cam);
     quality.step(dt);
-    updateHud(dt);
+    updateReadout(dt);
 
     renderer.render(scene, camera.cam);
 }

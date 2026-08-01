@@ -5,7 +5,7 @@
  */
 
 import * as THREE from 'three';
-import { COLOR } from './scene.js';
+import { COLOR } from './tokens.js';
 
 export const SPEC = {
     floor: { w: 46, d: 34 },

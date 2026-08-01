@@ -1,0 +1,126 @@
+/* hud.js — marcadores projetados em tela e avisos.
+ *
+ * Em primeira pessoa não existe visão geral: sem marcador, o jogador não faz
+ * ideia de para onde ir e fecha a aba. O marcador precisa funcionar nos dois
+ * casos — alvo visível à frente, e alvo fora do campo de visão (aí vira seta
+ * grudada na borda apontando para ele).
+ */
+
+import * as THREE from 'three';
+
+const _v = new THREE.Vector3();
+
+export function createHud(root) {
+    const layer = document.createElement('div');
+    layer.className = 'markers';
+    root.appendChild(layer);
+
+    const banner = document.createElement('div');
+    banner.className = 'banner';
+    root.appendChild(banner);
+
+    const prompt = document.createElement('div');
+    prompt.className = 'prompt';
+    root.appendChild(prompt);
+
+    const markers = [];
+
+    function addMarker({ label, sub = '', kind = 'alvo' }) {
+        const e = document.createElement('div');
+        e.className = `marker is-${kind}`;
+        e.innerHTML =
+            `<div class="mk-arrow"></div>` +
+            `<div class="mk-body"><div class="mk-lbl"></div><div class="mk-sub"></div></div>`;
+        layer.appendChild(e);
+        const m = {
+            el: e,
+            lblEl: e.querySelector('.mk-lbl'),
+            subEl: e.querySelector('.mk-sub'),
+            arrow: e.querySelector('.mk-arrow'),
+            target: new THREE.Vector3(),
+            visible: false,
+            label, sub, kind,
+        };
+        m.lblEl.textContent = label;
+        m.subEl.textContent = sub;
+        markers.push(m);
+        return m;
+    }
+
+    function setMarker(m, { pos, label, sub, kind, visible = true }) {
+        if (pos) m.target.copy(pos);
+        if (label !== undefined && label !== m.label) { m.label = label; m.lblEl.textContent = label; }
+        if (sub !== undefined && sub !== m.sub) { m.sub = sub; m.subEl.textContent = sub; }
+        if (kind !== undefined && kind !== m.kind) {
+            m.el.classList.remove(`is-${m.kind}`);
+            m.kind = kind;
+            m.el.classList.add(`is-${kind}`);
+        }
+        m.visible = visible;
+    }
+
+    function project(cam) {
+        const w = innerWidth, h = innerHeight;
+        const cx = w / 2, cy = h / 2;
+        const pad = 56;
+
+        for (const m of markers) {
+            if (!m.visible) { m.el.style.display = 'none'; continue; }
+            m.el.style.display = '';
+
+            _v.copy(m.target).project(cam);
+            const behind = _v.z > 1;
+
+            let x = (_v.x * 0.5 + 0.5) * w;
+            let y = (-_v.y * 0.5 + 0.5) * h;
+            if (behind) { x = w - x; y = h - y; }   // atrás: espelha para a borda certa
+
+            const off = behind || x < pad || x > w - pad || y < pad || y > h - pad;
+
+            if (off) {
+                // gruda na borda, apontando para o alvo
+                let dx = x - cx, dy = y - cy;
+                const len = Math.hypot(dx, dy) || 1;
+                dx /= len; dy /= len;
+                const sx = (w / 2 - pad) / Math.abs(dx || 1e-6);
+                const sy = (h / 2 - pad) / Math.abs(dy || 1e-6);
+                const s = Math.min(sx, sy);
+                x = cx + dx * s;
+                y = cy + dy * s;
+                m.el.classList.add('is-off');
+                m.arrow.style.transform = `rotate(${Math.atan2(dy, dx) * 180 / Math.PI + 90}deg)`;
+            } else {
+                m.el.classList.remove('is-off');
+            }
+
+            const dist = cam.position.distanceTo(m.target);
+            m.el.style.transform = `translate3d(${Math.round(x)}px,${Math.round(y)}px,0) translate(-50%,-50%)`;
+            m.el.style.setProperty('--d', dist.toFixed(0));
+            if (!off) m.subEl.textContent = m.sub ? `${m.sub} · ${dist.toFixed(0)} m` : `${dist.toFixed(0)} m`;
+            else m.subEl.textContent = `${dist.toFixed(0)} m`;
+        }
+    }
+
+    let bannerT = 0;
+    function say(text, kind = 'info', secs = 2.6) {
+        banner.textContent = text;
+        banner.className = `banner is-${kind} on`;
+        bannerT = secs;
+    }
+
+    function setPrompt(text, kind = 'ok') {
+        if (!text) { prompt.className = 'prompt'; return; }
+        prompt.textContent = text;
+        prompt.className = `prompt on is-${kind}`;
+    }
+
+    function update(dt, cam) {
+        project(cam);
+        if (bannerT > 0) {
+            bannerT -= dt;
+            if (bannerT <= 0) banner.classList.remove('on');
+        }
+    }
+
+    return { addMarker, setMarker, say, setPrompt, update, markers };
+}

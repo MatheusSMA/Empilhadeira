@@ -283,6 +283,322 @@ body.touch .touchui {
     border-radius: 3px;
 }
 
+.tbtn.aux {
+    width: 58px;
+    height: 42px;
+    right: calc(102px + env(safe-area-inset-right));
+}
+
+.tbtn.aux.back {
+    bottom: calc(68px + env(safe-area-inset-bottom));
+}
+
+.tbtn.aux.cam {
+    bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+/* ---------- Vinheta e corte em preto ----------
+   Gradiente congelado; só `opacity` é animada (composição na GPU). Animar o
+   próprio radial-gradient faz repaint por frame e mata o celular. */
+
+#vig {
+    position: fixed;
+    inset: 0;
+    z-index: 9;
+    pointer-events: none;
+    opacity: 0;
+    will-change: opacity;
+    background: radial-gradient(ellipse 66% 62% at 50% 54%,
+            rgba(20, 24, 28, 0) 40%, rgba(20, 24, 28, .82) 100%);
+}
+
+#fade {
+    position: fixed;
+    inset: 0;
+    z-index: 11;
+    pointer-events: none;
+    opacity: 0;
+    background: #14181C;
+    will-change: opacity;
+}
+
+/* ---------- Chip de estado ---------- */
+
+.chip {
+    position: absolute;
+    left: 50%;
+    bottom: calc(22px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(6px);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    background: rgba(20, 24, 28, .86);
+    border: 1px solid rgba(255, 255, 255, .18);
+    border-left: 3px solid var(--slate);
+    border-radius: 3px;
+    padding: 9px 15px;
+    color: #D6DBE0;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity .18s ease, transform .18s ease;
+    max-width: 92vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chip.on {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.chip.is-ok {
+    border-left-color: var(--deep);
+    color: #9FE0CE;
+}
+
+.chip.is-warn {
+    border-left-color: var(--hazard);
+    color: var(--hazard);
+}
+
+body.touch .chip {
+    bottom: auto;
+    top: calc(120px + env(safe-area-inset-top));
+}
+
+/* ---------- Marcadores projetados ---------- */
+
+.markers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.marker {
+    position: absolute;
+    left: 0;
+    top: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    will-change: transform;
+}
+
+.mk-body {
+    background: rgba(20, 24, 28, .8);
+    border: 1px solid var(--hazard);
+    border-radius: 3px;
+    padding: 5px 9px;
+    text-align: left;
+}
+
+.marker.is-vaga .mk-body {
+    border-color: var(--deep);
+}
+
+.mk-lbl {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--hazard);
+    font-weight: 600;
+}
+
+.marker.is-vaga .mk-lbl {
+    color: #8FD9C6;
+}
+
+.mk-sub {
+    font-family: var(--mono);
+    font-size: 8.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #A9B1B9;
+    margin-top: 1px;
+}
+
+.mk-arrow {
+    display: none;
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 12px solid var(--hazard);
+}
+
+.marker.is-off .mk-arrow {
+    display: block;
+}
+
+.marker.is-off .mk-lbl {
+    font-size: 9px;
+}
+
+.marker.is-off .mk-sub {
+    display: none;
+}
+
+/* ---------- Faixa de aviso ---------- */
+
+.banner {
+    position: absolute;
+    left: 50%;
+    top: calc(78px + env(safe-area-inset-top));
+    transform: translateX(-50%) translateY(-8px);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    font-weight: 600;
+    background: var(--hazard);
+    color: var(--ink);
+    border-radius: 3px;
+    padding: 11px 20px;
+    opacity: 0;
+    transition: opacity .2s ease, transform .2s ease;
+    white-space: nowrap;
+    max-width: 92vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.banner.on {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.banner.is-ok {
+    background: var(--deep);
+    color: #fff;
+}
+
+.prompt {
+    display: none;
+}
+
+/* ---------- Cartão final ---------- */
+
+#card {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(20, 24, 28, .72);
+    pointer-events: auto;
+}
+
+#card[hidden] {
+    display: none;
+}
+
+.card-box {
+    width: 100%;
+    max-width: 420px;
+    background: var(--paper);
+    color: var(--ink);
+    border-top: 4px solid var(--hazard);
+    border-radius: 3px;
+    padding: 24px 26px;
+    box-shadow: 0 18px 44px rgba(20, 24, 28, .45);
+}
+
+.card-lbl {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--signal);
+    margin-bottom: 7px;
+}
+
+.card-box h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 27px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+}
+
+.cr {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.cr span {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--slate);
+}
+
+.cr b {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 19px;
+    white-space: nowrap;
+}
+
+.card-foot {
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--slate);
+    margin-top: 14px;
+    line-height: 1.7;
+}
+
+.card-act {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.card-btn {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    background: var(--ink);
+    color: var(--white);
+    border: 1px solid var(--ink);
+    border-radius: 3px;
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+}
+
+.card-btn.ghost {
+    background: transparent;
+    color: var(--ink);
+}
+
+/* ---------- Retrato: letterbox ----------
+   Sem isto, 390×844 entrega 27° de FOV horizontal — buraco de fechadura, com os
+   polegares justo por cima de onde o garfo aparece. */
+
+body.portrait .stick-zone,
+body.portrait .btn-zone {
+    height: 46%;
+}
+
+body.portrait .keyhints {
+    display: none;
+}
+
 /* ---------- Debug (?debug=1) ---------- */
 
 .debug {

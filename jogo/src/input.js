@@ -11,18 +11,21 @@ const KEYMAP = {
     fork: { pos: ['KeyQ'], neg: ['KeyE'] },
     tilt: { pos: ['KeyX'], neg: ['KeyZ'] },
 };
-const BTNKEYS = { honk: ['Space'], retry: ['KeyR'], pause: ['Escape'] };
+const BTNKEYS = {
+    honk: ['Space'], retry: ['KeyR'], pause: ['Escape'],
+    cam: ['KeyV'], back: ['KeyC'],
+};
 
 const held = new Set();          // teclas fisicamente pressionadas
 const touchBtn = Object.create(null); // botões de toque pressionados
 
 const state = {
     axes: { drive: 0, steer: 0, fork: 0, tilt: 0 },
-    held: { honk: false, retry: false, pause: false },
+    held: { honk: false, retry: false, pause: false, cam: false, back: false },
     source: 'keyboard',
     enabled: true,
 };
-let prevHeld = { honk: false, retry: false, pause: false };
+let prevHeld = { ...state.held };
 
 /* ---------- teclado ---------- */
 
@@ -136,6 +139,42 @@ function bindButton(el) {
     el.addEventListener('pointerleave', up, { passive: false });
 }
 
+/* ---------- olhar em volta ----------
+   O listener vai no CANVAS, nunca em window com capture nem numa div por cima
+   da HUD: qualquer uma das duas rouba o ponteiro do joystick e a empilhadeira
+   fica com o acelerador travado. */
+let onLook = null;
+let lookId = null, lookPrev = null, lookMoved = 0;
+
+function bindLook(canvas) {
+    canvas.addEventListener('pointerdown', e => {
+        if (lookId !== null) return;
+        lookId = e.pointerId;
+        lookPrev = { x: e.clientX, y: e.clientY };
+        lookMoved = 0;
+        canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', e => {
+        if (e.pointerId !== lookId || !onLook) return;
+        const dx = (e.clientX - lookPrev.x) / innerWidth;
+        const dy = (e.clientY - lookPrev.y) / innerHeight;
+        lookPrev = { x: e.clientX, y: e.clientY };
+        lookMoved += Math.abs(dx) + Math.abs(dy);
+        onLook(dx, dy);
+    });
+
+    const end = e => {
+        if (e.pointerId !== lookId) return;
+        lookId = null;
+        // toque curto sem arrastar = recentralizar o olhar
+        if (lookMoved < 0.012 && onLook) onLook(0, 0, true);
+    };
+    canvas.addEventListener('pointerup', end);
+    canvas.addEventListener('pointercancel', end);
+    canvas.addEventListener('lostpointercapture', end);
+}
+
 /* ---------- detecção de fonte (nunca por user-agent) ---------- */
 
 function markTouch() {
@@ -155,10 +194,13 @@ export const input = {
     held: state.held,
     get source() { return state.source; },
 
-    init() {
+    init({ look } = {}) {
         const zone = document.getElementById('stickZone');
         if (zone) bindStick(zone, document.getElementById('stick'), document.getElementById('stickKnob'));
         document.querySelectorAll('[data-btn]').forEach(bindButton);
+        onLook = look || null;
+        const canvas = document.getElementById('stage');
+        if (canvas && onLook) bindLook(canvas);
         // Se o aparelho é primariamente de toque, já mostra os controles sem esperar o primeiro toque.
         if (matchMedia('(hover: none) and (pointer: coarse)').matches) markTouch();
         stickReset();
@@ -176,7 +218,7 @@ export const input = {
 
         if (!state.enabled) {
             a.drive = a.steer = a.fork = a.tilt = 0;
-            state.held.honk = state.held.retry = state.held.pause = false;
+            for (const k in state.held) state.held[k] = false;
             return;
         }
 
@@ -189,6 +231,8 @@ export const input = {
         state.held.honk = BTNKEYS.honk.some(k => held.has(k)) || !!touchBtn.honk;
         state.held.retry = BTNKEYS.retry.some(k => held.has(k)) || !!touchBtn.retry;
         state.held.pause = BTNKEYS.pause.some(k => held.has(k));
+        state.held.cam = BTNKEYS.cam.some(k => held.has(k)) || !!touchBtn.cam;
+        state.held.back = BTNKEYS.back.some(k => held.has(k)) || !!touchBtn.back;
     },
 
     /** true apenas no frame em que o botão desceu. */

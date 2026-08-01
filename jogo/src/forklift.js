@@ -7,14 +7,18 @@
  */
 
 import * as THREE from 'three';
-import { COLOR } from './scene.js';
+import { COLOR } from './tokens.js';
 
 /* ---------- constantes de dirigibilidade (é aqui que se itera o feel) ---------- */
 export const K = {
     L: 1.30,                    // entre-eixos (m)
     DMAX: THREE.MathUtils.degToRad(78),  // esterço máximo — tan(78°)=4.7, raio minúsculo como na real
     SERVO: THREE.MathUtils.degToRad(140), // velocidade do servo de esterço (rad/s)
-    OMEGA_MAX: 1.7,             // teto anti-enjoo (rad/s)
+    // Teto anti-enjoo. O pico real da curva de esterço é ω = (v/L)·tan(δ(v)),
+    // máximo em v≈1,5 m/s → 1,372 rad/s (78,6°/s). Clampar em 1,25 corta 9% do
+    // pico e não toca no pivô parado (0,73 rad/s a 0,3 m/s) — o "bico fino" que
+    // vende continua, some só o pedaço que embrulha o estômago em 1ª pessoa.
+    OMEGA_MAX: 1.25,
     STEER_FALLOFF: 0.72,        // quanto o esterço fecha com a velocidade — ver nota em step()
     VMAX: 3.0,                  // m/s vazio
     VMAX_LOAD: 2.2,             // m/s com carga
@@ -22,7 +26,7 @@ export const K = {
     ACCEL: 2.6,
     BRAKE: 5.0,
     DRAG: 0.8,
-    FORK_MIN: 0.06,
+    FORK_MIN: 0.05,             // = altura da barra do garfo no mundo (ver mastPivot)
     FORK_MAX: 3.20,
     FORK_SPEED: 0.9,
     TILT_MIN: THREE.MathUtils.degToRad(-3),
@@ -34,6 +38,15 @@ export const K = {
     ALAT_WARN: 2.6,
     ALAT_WARN_LOAD: 1.3,
 };
+
+/* Fonte única da calibração da cabine. A câmera em 1ª pessoa deriva o pitch
+ * destes dois números — se o modelo mudar, mude aqui e o resto acompanha.
+ * Olho: 0,67 m acima do topo do assento (y=1,03), com 0,57 m de folga até o
+ * teto (face inferior em 2,27), logo à frente da almofada.
+ * TIP_Z: garfo horizontal é box(…, 1.05) em carriage-local z=0,70 → 1,225, mais
+ * mastPivot.z = 0,36 → 1,585. Conferido contra a geometria real. */
+export const EYE = { x: 0, y: 1.70, z: -1.00 };
+export const TIP_Z = 1.585;
 
 const MAT = {
     hazard: new THREE.MeshStandardMaterial({ color: COLOR.hazard, roughness: 0.55, metalness: 0.10 }),
@@ -103,8 +116,12 @@ export function createForklift() {
     body.add(at(box(1.04, 0.06, 1.30, MAT.steel), 0, 2.30, -1.02));
 
     /* ---------- mastro ---------- */
+    // y = 0,04 não é arbitrário: com o garfo em carriage-local y=0,02 e
+    // carriage.position.y = forkY - FORK_MIN, isso faz a barra do garfo ficar
+    // exatamente na altura `forkY` em coordenada de mundo. Sem essa calibração a
+    // detecção de encaixe erra por 8 cm — invisível na tela, fatal no teste.
     const mastPivot = new THREE.Group();
-    mastPivot.position.set(0, 0.12, 0.36);
+    mastPivot.position.set(0, 0.03, 0.36);
     body.add(mastPivot);
 
     mastPivot.add(at(box(0.09, 3.20, 0.14, MAT.steel), 0.42, 1.60, 0));

@@ -26,6 +26,11 @@
 <body>
     <canvas id="stage"></canvas>
 
+    <!-- Vinheta e corte em preto. O gradiente fica CONGELADO no estado fechado e
+         só a opacidade é animada: animar radial-gradient faz repaint por frame. -->
+    <div id="vig"></div>
+    <div id="fade"></div>
+
     <div id="overlay">
         <div class="hud">
             <div class="readout">
@@ -42,11 +47,15 @@
                 Base NR-11
             </div>
 
+            <div class="chip" id="chip"></div>
+
             <div class="keyhints">
                 <span><b>W A S D</b> dirigir</span>
                 <span><b>Q E</b> garfo</span>
                 <span><b>Z X</b> torre</span>
-                <span><b>espaço</b> buzina</span>
+                <span><b>arrastar</b> olhar</span>
+                <span><b>C</b> olhar atrás</span>
+                <span><b>V</b> câmera</span>
                 <span><b>R</b> reiniciar</span>
             </div>
 
@@ -61,7 +70,21 @@
                     <div class="tbtn fork dn" data-btn="forkDown">▼</div>
                     <div class="tbtn tilt f" data-btn="tiltFwd">Torre ◄</div>
                     <div class="tbtn tilt b" data-btn="tiltBack">Torre ►</div>
-                    <div class="tbtn honk" data-btn="honk">Buzina</div>
+                    <div class="tbtn aux back" data-btn="back">Trás</div>
+                    <div class="tbtn aux cam" data-btn="cam">Câm</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="card" hidden>
+            <div class="card-box">
+                <div class="card-lbl">Registro de desempenho</div>
+                <h2>Nível 5 — Operação com carga</h2>
+                <div class="card-rows"></div>
+                <div class="card-foot">Nível 5 de 6 · 1 palete depositado — a trilha completa exige 3</div>
+                <div class="card-act">
+                    <button class="card-btn" data-btn="retry">Repetir</button>
+                    <a class="card-btn ghost" href="../#trilha">Ver a trilha completa</a>
                 </div>
             </div>
         </div>

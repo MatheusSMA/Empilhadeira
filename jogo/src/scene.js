@@ -1,19 +1,8 @@
 /* scene.js — renderer, luz, chão, câmera-mola e degrade adaptativo de qualidade. */
 
 import * as THREE from 'three';
-
-export const COLOR = {
-    ink: 0x14181C,
-    steel: 0x2E353D,
-    slate: 0x5C666F,
-    line: 0xC9C6BE,
-    concrete: 0xE6E3DC,
-    paper: 0xF5F3EE,
-    white: 0xFCFBF8,
-    hazard: 0xF0B208,
-    signal: 0xB8352B,
-    deep: 0x1F5C51,
-};
+import { createCameraRig } from './camera.js';
+import { COLOR } from './tokens.js';
 
 const isCoarse = matchMedia('(hover: none) and (pointer: coarse)').matches;
 
@@ -51,67 +40,6 @@ function makeFloorTexture() {
     return t;
 }
 
-/* ---------- câmera-mola ----------
-   O yaw da câmera persegue MAIS DEVAGAR que o do chassi: é isso que faz a
-   traseira aparecer varrendo na curva — a leitura visual do esterço traseiro. */
-class ChaseCamera {
-    constructor(aspect) {
-        this.cam = new THREE.PerspectiveCamera(55, aspect, 0.1, 220);
-        this.pos = new THREE.Vector3(0, 3, -6);
-        this.look = new THREE.Vector3();
-        this.yaw = 0;
-        this.fov = 55;
-        this.shake = 0;
-        this._t = new THREE.Vector3();
-    }
-
-    snapTo(target) {
-        this.yaw = target.yaw;
-        this.update(1, target);
-        this.pos.copy(this._desired(target));
-        this.cam.position.copy(this.pos);
-    }
-
-    _desired(t) {
-        const f = new THREE.Vector3(Math.sin(this.yaw), 0, Math.cos(this.yaw));
-        return this._t.set(t.x, 0, t.z)
-            .addScaledVector(f, -5.6)
-            .add(new THREE.Vector3(0, 2.7, 0));
-    }
-
-    update(dt, t) {
-        // aproximação exponencial: independente de framerate
-        const kYaw = 1 - Math.exp(-3.0 * dt);
-        let d = t.yaw - this.yaw;
-        d = Math.atan2(Math.sin(d), Math.cos(d));   // menor arco
-        this.yaw += d * kYaw;
-
-        const kPos = 1 - Math.exp(-6.0 * dt);
-        this.pos.lerp(this._desired(t), kPos);
-
-        // FOV cresce com a velocidade: sensação de andamento sem mudar nada na física
-        const want = 55 + 6 * Math.min(Math.abs(t.speed) / 3.0, 1);
-        this.fov += (want - this.fov) * (1 - Math.exp(-4 * dt));
-        if (Math.abs(this.cam.fov - this.fov) > 0.01) {
-            this.cam.fov = this.fov;
-            this.cam.updateProjectionMatrix();
-        }
-
-        this.cam.position.copy(this.pos);
-        if (this.shake > 0) {
-            this.cam.position.x += (Math.random() - 0.5) * this.shake;
-            this.cam.position.y += (Math.random() - 0.5) * this.shake;
-            this.shake = Math.max(0, this.shake - dt * 0.9);
-        }
-
-        const fwd = new THREE.Vector3(Math.sin(t.yaw), 0, Math.cos(t.yaw));
-        this.look.lerp(this._t.set(t.x, 1.05, t.z).addScaledVector(fwd, 3.4), 1 - Math.exp(-7 * dt));
-        this.cam.lookAt(this.look);
-    }
-
-    kick(a) { this.shake = Math.min(0.4, this.shake + a); }
-}
-
 export function createScene(canvas) {
     const renderer = new THREE.WebGLRenderer({
         canvas,
@@ -136,10 +64,12 @@ export function createScene(canvas) {
     sun.shadow.mapSize.set(isCoarse ? 512 : 1024, isCoarse ? 512 : 1024);
     sun.shadow.bias = -0.0008;
     sun.shadow.normalBias = 0.02;
-    // Câmera de sombra APERTADA e seguindo o veículo: nitidez sem mapa gigante.
+    // Câmera de sombra apertada e seguindo o veículo: nitidez sem mapa gigante.
+    // ±14 e não ±9: em 1ª pessoa enxerga-se 20 m corredor abaixo, e com ±9 as
+    // sombras terminavam num círculo visível em volta da máquina.
     const sc = sun.shadow.camera;
-    sc.left = -9; sc.right = 9; sc.top = 9; sc.bottom = -9;
-    sc.near = 1; sc.far = 40;
+    sc.left = -14; sc.right = 14; sc.top = 14; sc.bottom = -14;
+    sc.near = 1; sc.far = 46;
     scene.add(sun);
     scene.add(sun.target);
 
@@ -151,7 +81,7 @@ export function createScene(canvas) {
     floor.receiveShadow = true;
     scene.add(floor);
 
-    const camera = new ChaseCamera(innerWidth / innerHeight);
+    const camera = createCameraRig(innerWidth / innerHeight);
 
     /* ---------- qualidade adaptativa ---------- */
     const quality = {
@@ -178,12 +108,20 @@ export function createScene(canvas) {
         renderer.setPixelRatio(Math.min(devicePixelRatio || 1, quality.maxDpr));
     }
 
+    /* Letterbox em retrato. É o cenário mais provável — o decisor abre o link no
+       WhatsApp, de pé, sem girar o aparelho. Em 390×844 a tela cheia entrega
+       27° de FOV horizontal (buraco de fechadura) com os polegares justamente
+       por cima da área onde o garfo aparece. Recortando para aspect ~0,91 são
+       61° horizontais e sobra faixa opaca para os controles. */
     function resize() {
         const w = innerWidth, h = innerHeight;
-        camera.cam.aspect = w / h;
-        camera.cam.updateProjectionMatrix();
+        const retrato = h > w * 1.15;
+        const vh = retrato ? Math.round(Math.min(h * 0.62, w * 1.10)) : h;
+
+        camera.setViewport(w, vh);
         applyDpr();
-        renderer.setSize(w, h, false);
+        renderer.setSize(w, vh, true);   // updateStyle: o style inline ancora no topo
+        document.body.classList.toggle('portrait', retrato);
     }
     applyDpr();
     resize();
