@@ -239,4 +239,12 @@ export const input = {
     pressed(name) {
         return !!state.held[name] && !prevHeld[name];
     },
+
+    /** Diagnóstico: de ONDE está vindo o comando. Existe porque "a empilhadeira
+     *  anda sozinha" é indistinguível de bug de física sem isto. */
+    debugSources() {
+        const teclas = [...held].join(',') || '—';
+        const btns = Object.keys(touchBtn).filter(k => touchBtn[k]).join(',') || '—';
+        return `teclas[${teclas}] btn[${btns}] stick(${stick.x.toFixed(2)},${stick.y.toFixed(2)}) ptr:${pointerId}`;
+    },
 };

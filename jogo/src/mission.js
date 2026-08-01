@@ -24,6 +24,12 @@ const GUIA = {
     alinhado: new THREE.Color(COLOR.deep),
 };
 
+/** Vibração háptica. Só existe no Android; iOS ignora silenciosamente — por isso
+ *  nunca é o ÚNICO sinal de que algo aconteceu, sempre acompanha som/HUD. */
+function vibrar(padrao) {
+    try { navigator.vibrate?.(padrao); } catch { /* sem suporte, sem problema */ }
+}
+
 export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
     /* ---------- guias de garfo projetadas no chão ----------
        Não é muleta de videogame: no último meio metro a face do palete cai a
@@ -118,14 +124,19 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         S.semProgresso += dt;
         S.picoALat = Math.max(S.picoALat, Math.abs(st.aLat));
 
-        const cand = palletSys.candidate();
+        const pr = palletSys.probe();
+        const cand = pr.ok ? pr : null;
         atualizaGuias(cand, st);
 
-        /* ---------- engate: sem botão novo. Armar é automático, ERGUER é do
-           jogador — é o momento "fui eu que fiz", que é o que vende. ---------- */
-        if (S.fase === 'buscar' && cand && input.axes.fork > 0) {
+        /* ---------- engate AUTOMÁTICO no instante do encaixe ----------
+           Era: alinhar E segurar o ▲ dentro de uma janela estreita de
+           profundidade. Não funciona — o palete não tem colisor, então na prática
+           o jogador atravessa ele e nada acontece. Playtest derrubou o desenho
+           anterior. Agora encaixou, pegou: vibra e vira parte do garfo. */
+        if (S.fase === 'buscar' && cand) {
             S.engate = palletSys.engage(cand);
             S.engate.depth = cand.depth;
+            vibrar([14, 45, 26]);
             S.fase = 'transportar';
             S.semProgresso = 0;
             S.autoTilt = 0;
@@ -134,7 +145,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
                 pos: new THREE.Vector3(VAGA.x, VAGA.y + 0.4, VAGA.z),
                 label: 'VAGA', sub: VAGA.label, kind: 'vaga', visible: true,
             });
-            hud.say('CARGA ENGATADA — LEVE ATÉ A ' + VAGA.label, 'ok', 3);
+            hud.say('CARGA ENGATADA — ERGA ▲ E LEVE ATÉ A ' + VAGA.label, 'ok', 3.4);
             telemetry?.push('pallet_pick', {
                 lat: +S.engate.lat.toFixed(3),
                 yawErr: +S.engate.yawErr.toFixed(3),
@@ -157,6 +168,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             if (r && r.slot) {
                 S.deposito = r;
                 S.fase = 'concluido';
+                vibrar([22, 60, 40]);
                 hud.setMarker(mk, { visible: false });
                 hud.say('DEPOSITADO — MISSÃO CONCLUÍDA', 'ok', 4);
                 telemetry?.push('pallet_place', {
@@ -166,26 +178,36 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             }
         }
 
-        /* ---------- chip de estado, em ordem de prioridade ---------- */
+        /* ---------- chip: diz O QUE CORRIGIR, não só que falhou ---------- */
+        const n2 = v => v.toFixed(2).replace('.', ',');
+
         if (S.fase === 'concluido') {
             chip('');
-        } else if (st.forkY > 0.6 && Math.abs(st.v) > 0.5) {
-            chip('GARFO ALTO — ABAIXE PARA TRAFEGAR', 'warn');
-        } else if (cand) {
-            chip('ENCAIXADO · ERGA O GARFO ▲', 'ok');
-        } else if (podeSoltar) {
-            chip('ALTURA OK — ABAIXE PARA SOLTAR ▼', 'ok');
         } else if (S.fase === 'transportar') {
-            const dz = VAGA.y - st.forkY;
-            const perto = Math.hypot(
-                (palletSys.carried ? VAGA.x : 0) - st.x, VAGA.z - st.z) < 3.5;
-            chip(perto
-                ? `NA VAGA: ALVO ${VAGA.y.toFixed(2).replace('.', ',')} m · Δ ${(dz >= 0 ? '+' : '') + dz.toFixed(2).replace('.', ',')} m`
-                : 'CARGA A BORDO · LIMITE 8 KM/H · NR-11', 'info');
-        } else if (S.semProgresso > 40) {
-            chip('APROXIME DEVAGAR E CENTRALIZE O PALETE ENTRE AS COLUNAS', 'info');
+            if (podeSoltar) {
+                chip('NA VAGA — ABAIXE O GARFO ▼ PARA SOLTAR', 'ok');
+            } else if (st.forkY > 0.6 && Math.abs(st.v) > 0.5) {
+                chip('GARFO ALTO — ABAIXE PARA TRAFEGAR', 'warn');
+            } else {
+                const perto = Math.hypot(VAGA.x - st.x, VAGA.z - st.z) < 4.0;
+                const dz = VAGA.y - st.forkY;
+                chip(perto
+                    ? `VAGA: ALVO ${n2(VAGA.y)} m · FALTAM ${n2(Math.abs(dz))} m ${dz > 0 ? '▲' : '▼'}`
+                    : 'CARGA A BORDO · LIMITE 8 KM/H · NR-11', 'info');
+            }
         } else {
-            chip('CENTRALIZE O PALETE ENTRE AS COLUNAS DO MASTRO', 'info');
+            // fase de busca: a ordem das mensagens é a ordem de correção
+            const lado = pr.latSign > 0 ? 'ESQUERDA' : 'DIREITA';
+            const msg = {
+                nenhum: ['PALETE JÁ RECOLHIDO', 'ok'],
+                longe: ['APROXIME-SE DO PALETE PELA FRENTE', 'info'],
+                perto: ['RECUE UM POUCO — VOCÊ PASSOU DO PALETE', 'warn'],
+                lateral: [`DESVIE PARA A ${lado} PARA CENTRALIZAR`, 'warn'],
+                angulo: ['ENDIREITE A MÁQUINA COM O PALETE', 'warn'],
+                garfo_alto: ['ABAIXE O GARFO ▼ ATÉ A ALTURA DO BOLSO', 'warn'],
+                garfo_baixo: ['ERGA O GARFO ▲ ATÉ A ALTURA DO BOLSO', 'warn'],
+            }[pr.falha] || ['CENTRALIZE O PALETE ENTRE AS COLUNAS DO MASTRO', 'info'];
+            chip(msg[0], msg[1]);
         }
     }
 

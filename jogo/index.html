@@ -32,6 +32,153 @@
     <div id="fade"></div>
 
     <div id="overlay">
+
+        <!-- ================= PORTAL =================
+             Encena a plataforma de treinamento que está sendo vendida. Não imita
+             o sistema de nenhuma empresa real: sem marca, logotipo ou domínio de
+             terceiro, e a faixa de demonstração aparece em todas as telas. -->
+
+        <section class="screen" id="scr-acesso">
+            <div class="lms">
+                <header class="lms-top">
+                    <div class="lms-brand">Formação <b>XR</b></div>
+                    <div class="lms-tag">Demonstração</div>
+                </header>
+
+                <div class="lms-body acesso">
+                    <div class="acesso-info">
+                        <div class="eyebrow">Plataforma de treinamento · Base NR-11</div>
+                        <h1>Trilha do operador de empilhadeira</h1>
+                        <p>Seis níveis, progressão travada por desempenho, telemetria enviada ao painel do
+                            instrutor. Esta demonstração abre o <b>Nível 5 — Operação com carga</b>.</p>
+                        <ul class="ticks">
+                            <li>Formação alinhada ao conteúdo programático da NR-11</li>
+                            <li>Registro de desempenho por aluno, exportável</li>
+                            <li>Mesma mecânica que roda no headset</li>
+                        </ul>
+                    </div>
+
+                    <form class="acesso-form" onsubmit="return false">
+                        <div class="af-lbl">Acesso do operador</div>
+
+                        <label class="fld">
+                            <span>Matrícula</span>
+                            <div class="ro" id="mtxt">—</div>
+                        </label>
+
+                        <label class="fld">
+                            <span>Nome</span>
+                            <input id="inNome" type="text" autocomplete="off" placeholder="Como quer ser chamado"
+                                maxlength="32">
+                        </label>
+
+                        <div class="fld-row">
+                            <label class="fld">
+                                <span>Unidade</span>
+                                <select id="inUnidade">
+                                    <option>CD Cajamar</option>
+                                    <option>CD Itapecerica</option>
+                                    <option>CD Simões Filho</option>
+                                </select>
+                            </label>
+                            <label class="fld">
+                                <span>Turno</span>
+                                <select id="inTurno">
+                                    <option>T1</option>
+                                    <option selected>T2</option>
+                                    <option>T3</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <button class="bt" id="btEntrar" type="button">Entrar na trilha</button>
+                        <div class="af-foot">Demonstração — nenhum dado é enviado ou armazenado fora deste
+                            navegador.</div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="screen" id="scr-trilha">
+            <div class="lms">
+                <header class="lms-top">
+                    <div class="lms-brand">Formação <b>XR</b></div>
+                    <div class="cracha">
+                        <div class="ch-ini" id="chIni">OP</div>
+                        <div>
+                            <div class="ch-nome" id="chNome">Operador</div>
+                            <div class="ch-meta" id="chMeta">—</div>
+                        </div>
+                        <button class="ch-sair" id="btSair" type="button">Sair</button>
+                    </div>
+                </header>
+
+                <div class="lms-body">
+                    <div class="prog">
+                        <div class="prog-k">Progresso da trilha</div>
+                        <div class="prog-bar"><i style="width:66.6%"></i></div>
+                        <div class="prog-v">4 de 6 níveis concluídos</div>
+                    </div>
+
+                    <div class="lista" id="lista"></div>
+
+                    <div class="nota-demo">Nesta demonstração o <b>Nível 5</b> é jogável. Os demais estão
+                        encenados para mostrar a estrutura da trilha completa.</div>
+                </div>
+            </div>
+            <div class="trava" id="trava">
+                <span id="travaMsg"></span>
+            </div>
+        </section>
+
+        <section class="screen" id="scr-brief">
+            <div class="lms">
+                <header class="lms-top">
+                    <div class="lms-brand">Formação <b>XR</b></div>
+                    <div class="lms-tag">Briefing</div>
+                </header>
+                <div class="lms-body brief">
+                    <div class="bf-n" id="bfN">Nível 5</div>
+                    <h1 id="bfT">Operação com carga</h1>
+                    <p id="bfD"></p>
+
+                    <div class="bf-grid">
+                        <div class="bf-card">
+                            <div class="bf-k">Objetivo</div>
+                            <ol>
+                                <li>Aproxime-se do palete de frente e centralizado</li>
+                                <li>Ao encaixar, os garfos prendem a carga sozinhos</li>
+                                <li>Erga, leve até a vaga sinalizada e abaixe para soltar</li>
+                            </ol>
+                        </div>
+                        <div class="bf-card">
+                            <div class="bf-k">Controles</div>
+                            <div class="ctrls desk">
+                                <div><b>W A S D</b> dirigir</div>
+                                <div><b>Q / E</b> erguer e abaixar o garfo</div>
+                                <div><b>Z / X</b> inclinar a torre</div>
+                                <div><b>arrastar</b> olhar em volta</div>
+                                <div><b>C</b> olhar para trás · <b>V</b> câmera</div>
+                                <div><b>R</b> reiniciar</div>
+                            </div>
+                            <div class="ctrls toque">
+                                <div><b>Analógico</b> à esquerda: dirigir</div>
+                                <div><b>▲ ▼</b> à direita: erguer e abaixar</div>
+                                <div><b>Torre ◄ ►</b> inclinar</div>
+                                <div><b>Arrastar na tela</b> olhar em volta</div>
+                                <div><b>Trás</b> olhar por cima do ombro</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bf-act">
+                        <button class="bt" id="btIniciar" type="button">Iniciar simulação</button>
+                        <button class="bt ghost" id="btVoltarTrilha" type="button">Voltar</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <div class="hud">
             <div class="readout">
                 <div class="k">Velocidade</div>
@@ -83,8 +230,8 @@
                 <div class="card-rows"></div>
                 <div class="card-foot">Nível 5 de 6 · 1 palete depositado — a trilha completa exige 3</div>
                 <div class="card-act">
-                    <button class="card-btn" data-btn="retry">Repetir</button>
-                    <a class="card-btn ghost" href="../#trilha">Ver a trilha completa</a>
+                    <button class="card-btn" id="btRepetir" type="button">Repetir</button>
+                    <button class="card-btn ghost" id="btTrilha" type="button">Voltar à trilha</button>
                 </div>
             </div>
         </div>

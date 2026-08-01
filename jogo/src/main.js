@@ -11,6 +11,7 @@ import { buildWarehouse, resolveCollision, unstick } from './warehouse.js';
 import { createPalletSystem } from './pallet.js';
 import { createMission } from './mission.js';
 import { createHud } from './hud.js';
+import { createApp } from './app.js';
 import { input } from './input.js';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -56,12 +57,45 @@ function respawn() {
 
 input.init({
     look: (dx, dy, recenter) => {
+        if (!emJogo) return;                 // o portal não dirige a câmera
         if (recenter) camera.recenterLook();
         else camera.look(dx, dy);
     },
 });
+
+/* ---------- portal ---------- */
+let emJogo = false;
+
+const app = createApp({
+    onStart: () => {
+        emJogo = true;
+        respawn();
+        camera.setShowcase(false);
+        camera.playIntro();
+        input.setEnabled(true);
+    },
+    onExit: () => {
+        emJogo = false;
+        camera.setShowcase(true);
+        input.setEnabled(false);
+    },
+});
+
+// A cena já está construída e quente: usá-la de fundo vivo do portal custa zero.
 respawn();
-camera.playIntro();
+camera.setShowcase(true);
+input.setEnabled(false);
+app.iniciar();
+
+document.getElementById('btRepetir')?.addEventListener('click', () => {
+    document.getElementById('card').hidden = true;
+    respawn();
+    camera.playIntro();
+});
+document.getElementById('btTrilha')?.addEventListener('click', () => {
+    document.getElementById('card').hidden = true;
+    app.voltarAoPortal();
+});
 
 /* ---------- HUD ---------- */
 const el = {
@@ -90,7 +124,9 @@ function updateReadout(dt) {
             `v ${fmt(s.v, 2)} · δ ${fmt(THREE.MathUtils.radToDeg(s.delta), 0)}° · ` +
             `ω ${fmt(s.omega, 2)} · aLat ${fmt(s.aLat, 1)}\n` +
             `garfo ${fmt(s.forkY, 2)} · tilt ${fmt(THREE.MathUtils.radToDeg(s.tilt), 1)}° · ` +
-            `cam ${camera.mode} · ${input.source}`;
+            `cam ${camera.mode} · ${input.source}\n` +
+            `eixos drive ${fmt(input.axes.drive, 2)} steer ${fmt(input.axes.steer, 2)} ` +
+            `fork ${fmt(input.axes.fork, 2)} · ${input.debugSources()}`;
     }
 }
 
@@ -106,9 +142,11 @@ function frame(now) {
 
     input.beginFrame();
 
-    if (input.pressed('retry')) respawn();
-    if (input.pressed('cam')) camera.toggle();
-    camera.setLookBack(input.held.back);
+    if (emJogo) {
+        if (input.pressed('retry')) { document.getElementById('card').hidden = true; respawn(); }
+        if (input.pressed('cam')) camera.toggle();
+        camera.setLookBack(input.held.back);
+    }
 
     const s = forklift.state;
 
@@ -131,7 +169,7 @@ function frame(now) {
     // matriz de mundo. Sem isto lê a pose do frame ANTERIOR — 5 cm a 3 m/s.
     forklift.root.updateMatrixWorld(true);
 
-    mission.update(dt, input);
+    if (emJogo) mission.update(dt, input);
     palletSys.update(dt);
 
     followSun(s);

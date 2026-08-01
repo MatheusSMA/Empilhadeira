@@ -18,11 +18,12 @@ export const P = {
     TOL_LAT: 0.30,    // desalinhamento lateral máximo (m)
     TOL_YAW: THREE.MathUtils.degToRad(28),
     TOL_FORK: 0.16,   // erro de altura do garfo (m)
-    // Garfos dentro dos bolsos, em coordenada local da empilhadeira. Z_MIN 1,00
-    // e não 0,80: com 0,80 a face traseira do palete cai em z=0,30, atravessando
-    // a placa do carro (z≈0,46) — engate com o palete dentro do mastro.
-    Z_MIN: 1.00,
-    Z_MAX: 1.55,
+    // Garfos dentro dos bolsos, em coordenada local da empilhadeira. Z_MIN 0,92
+    // é o limite geométrico: abaixo disso a face traseira do palete atravessa a
+    // placa do carro. Z_MAX 1,90 é folgado de propósito — o engate é automático,
+    // então a janela precisa abrir CEDO, antes de o jogador atravessar o palete.
+    Z_MIN: 0.92,
+    Z_MAX: 1.90,
     BLADE_MID: 0.70,  // meio da lâmina em local do mastro — usado na correção de tilt
     SNAP_TIME: 0.22,
     PLACE_TOL: 0.60,  // raio de aceitação da vaga de depósito
@@ -150,35 +151,61 @@ export function createPalletSystem({ scene, forklift }) {
 
     /** Palete alinhado para engate, ou null. Também devolve o quanto está torto —
      *  esse erro vira nota de precisão, então é medido ANTES de qualquer assistência. */
-    function candidate() {
-        if (carried) return null;
+    /** Estado do encaixe com o palete mais próximo, incluindo POR QUE falhou.
+     *  O motivo importa tanto quanto o resultado: sem ele a HUD só sabe dizer
+     *  "não deu", e o jogador não descobre sozinho o que corrigir. */
+    function probe() {
+        if (carried) return { ok: false, falha: 'carregando' };
+
         // Correção de tilt: mastPivot.rotation.x = -tilt levanta a lâmina em
         // sin(tilt)·BLADE_MID — a 8° são 9,7 cm, 60% da tolerância vertical. Sem
         // isto o instrumento e a geometria discordam e o encaixe falha "sem motivo".
-        const fy = forklift.state.forkY
-            + Math.sin(forklift.state.tilt) * P.BLADE_MID;
+        const fy = forklift.state.forkY + Math.sin(forklift.state.tilt) * P.BLADE_MID;
 
+        let melhor = null;
         for (const p of pallets) {
-            if (p.userData.engaged) continue;
+            if (p.userData.engaged || p.userData.placed) continue;
             p.getWorldPosition(_v);
             forklift.root.worldToLocal(_v);
 
-            if (_v.z < P.Z_MIN || _v.z > P.Z_MAX) continue;
-            const lat = Math.abs(_v.x);
-            if (lat > P.TOL_LAT) continue;
-
+            const alvoY = p.position.y + P.POCKET_Y;
+            const c = {
+                pallet: p,
+                depth: _v.z,
+                lat: Math.abs(_v.x),
+                latSign: Math.sign(_v.x),
+                forkErr: fy - alvoY,
+                dist: Math.hypot(_v.x, _v.z),
+            };
             let dyaw = p.rotation.y - forklift.state.yaw;
             dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw));
             // o palete tem simetria de 180°: entrar por qualquer face serve
-            const yawErr = Math.min(Math.abs(dyaw), Math.abs(Math.abs(dyaw) - Math.PI));
-            if (yawErr > P.TOL_YAW) continue;
+            c.yawErr = Math.min(Math.abs(dyaw), Math.abs(Math.abs(dyaw) - Math.PI));
 
-            const forkErr = Math.abs(fy - (p.position.y + P.POCKET_Y));
-            if (forkErr > P.TOL_FORK) continue;
-
-            return { pallet: p, lat, yawErr, forkErr, depth: _v.z };
+            if (!melhor || c.dist < melhor.dist) melhor = c;
         }
-        return null;
+        if (!melhor) return { ok: false, falha: 'nenhum' };
+
+        // A ordem dos testes É a ordem em que o jogador deve corrigir. Ângulo e
+        // desvio vêm ANTES da profundidade quando já se está por perto: chegar
+        // torto encurta a distância projetada, e sem isto a dica manda "recuar"
+        // quando o problema real é estar atravessado.
+        const porPerto = melhor.dist < 2.6;
+        if (porPerto && melhor.yawErr > P.TOL_YAW) return { ...melhor, ok: false, falha: 'angulo' };
+        if (porPerto && melhor.lat > P.TOL_LAT) return { ...melhor, ok: false, falha: 'lateral' };
+        if (melhor.depth < P.Z_MIN || melhor.depth > P.Z_MAX)
+            return { ...melhor, ok: false, falha: melhor.depth > P.Z_MAX ? 'longe' : 'perto' };
+        if (melhor.lat > P.TOL_LAT) return { ...melhor, ok: false, falha: 'lateral' };
+        if (melhor.yawErr > P.TOL_YAW) return { ...melhor, ok: false, falha: 'angulo' };
+        if (Math.abs(melhor.forkErr) > P.TOL_FORK)
+            return { ...melhor, ok: false, falha: melhor.forkErr > 0 ? 'garfo_alto' : 'garfo_baixo' };
+
+        return { ...melhor, ok: true, forkErr: Math.abs(melhor.forkErr) };
+    }
+
+    function candidate() {
+        const r = probe();
+        return r.ok ? r : null;
     }
 
     function engage(c) {
@@ -192,11 +219,14 @@ export function createPalletSystem({ scene, forklift }) {
         carried = p;
         forklift.state.loaded = true;
 
-        // pose assentada, em coordenada local do carriage
+        // Pose assentada, em coordenada local do carriage. y = -POCKET_Y porque a
+        // barra do garfo fica DENTRO do bolso, que está a POCKET_Y acima da base
+        // do palete — com y=0 o estrado flutuaria 7 cm e erguer não o tiraria do
+        // chão de forma convincente.
         snap = {
             t: 0,
             from: { pos: p.position.clone(), quat: p.quaternion.clone() },
-            to: { pos: new THREE.Vector3(0, -0.02, 0.74), quat: new THREE.Quaternion() },
+            to: { pos: new THREE.Vector3(0, -P.POCKET_Y, 0.74), quat: new THREE.Quaternion() },
         };
         return { lat: c.lat, yawErr: c.yawErr, forkErr: c.forkErr };
     }
@@ -270,7 +300,7 @@ export function createPalletSystem({ scene, forklift }) {
     }
 
     return {
-        pallets, spawn, setTarget, candidate, canPlace, engage, release, update,
+        pallets, spawn, setTarget, probe, candidate, canPlace, engage, release, update,
         get carried() { return carried; },
         get targetSlot() { return targetSlot; },
         reset() {

@@ -56,6 +56,7 @@ export function createCameraRig(aspect) {
         kick: 0, shakeT: 0,
         vig: 0,
         lagYaw: 0,
+        showcase: 0, showcaseTarget: 0, orbit: 0.6,
         chasePos: new THREE.Vector3(),
         chaseYaw: 0,
     };
@@ -150,6 +151,19 @@ export function createCameraRig(aspect) {
         out.fov = D2R(44);
     }
 
+    /* ---------- vitrine: órbita lenta para o fundo das telas do portal ----------
+       A cena já está construída e quente; usá-la de fundo custa zero e é o frame
+       em que a máquina aparece inteira — que é justamente o que a 1ª pessoa some. */
+    function solveShowcase(st, dt, out) {
+        S.orbit += dt * 0.22;
+        const r = 7.4;
+        out.pos.set(st.x + Math.cos(S.orbit) * r, 3.1, st.z + Math.sin(S.orbit) * r);
+        const look = _p.set(st.x, 1.35, st.z);
+        const m = new THREE.Matrix4().lookAt(out.pos, look, THREE.Object3D.DEFAULT_UP);
+        out.quat.setFromRotationMatrix(m);
+        out.fov = D2R(42);
+    }
+
     const A = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), fov: vfov };
     const B = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), fov: vfov };
 
@@ -170,6 +184,14 @@ export function createCameraRig(aspect) {
             _p.lerpVectors(A.pos, B.pos, S.mix);
             _q.slerpQuaternions(A.quat, B.quat, S.mix);
             pos = _p; quat = _q; fov = A.fov + (B.fov - A.fov) * S.mix;
+        }
+
+        // vitrine domina tudo — é estado de portal, não de jogo
+        if (S.showcase > 0.001) {
+            solveShowcase(st, dt, B);
+            _p2.lerpVectors(pos, B.pos, S.showcase);
+            _q2.slerpQuaternions(quat, B.quat, S.showcase);
+            pos = _p2; quat = _q2; fov = fov + (B.fov - fov) * S.showcase;
         }
 
         cam.position.copy(pos);
@@ -210,6 +232,7 @@ export function createCameraRig(aspect) {
         setLookBack(v) { S.lookHeld = !!v; },
 
         toggle() { S.mixTarget = S.mixTarget > 0.5 ? 0 : 1; },
+        setShowcase(v) { S.showcaseTarget = v ? 1 : 0; },
         kick(a) { S.shakeT = Math.min(1, S.shakeT + a); },
 
         blackout(ms = 140) { fadeT = 1; fadeDur = ms / 1000; },
@@ -239,6 +262,7 @@ export function createCameraRig(aspect) {
         update(dt, st, body) {
             if (S.intro > 0) S.intro = Math.max(0, S.intro - dt / 2.6);
             S.mix += (S.mixTarget - S.mix) * expK(4.2, dt);
+            S.showcase += (S.showcaseTarget - S.showcase) * expK(2.6, dt);
 
             apply(st, body || { rotation: { z: 0 } }, dt);
 
