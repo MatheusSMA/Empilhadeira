@@ -45,8 +45,9 @@ function makeFloorTexture() {
 
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(40, 40);
+    t.repeat.set(80, 80);   // piso de 160 m → junta a cada 2 m
     t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
     return t;
 }
 

@@ -5,8 +5,9 @@
  */
 
 import * as THREE from 'three';
-import { createScene, COLOR } from './scene.js';
+import { createScene } from './scene.js';
 import { createForklift } from './forklift.js';
+import { buildWarehouse, resolveCollision, unstick } from './warehouse.js';
 import { input } from './input.js';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
@@ -24,33 +25,25 @@ try {
 
 const { renderer, scene, camera, quality, followSun } = ctx;
 
+const world = buildWarehouse(scene);
+
 const forklift = createForklift();
 scene.add(forklift.root);
-forklift.reset(0, -6, 0);
-camera.snapTo(forklift.state);
+
+/* ---------- estado do loop ---------- */
+const STEP = 1 / 60;
+let last = performance.now();
+let acc = 0;
+let fps = 60;
+
+function respawn() {
+    forklift.reset(world.spawn.x, world.spawn.z, world.spawn.yaw);
+    camera.snapTo(forklift.state);
+    acc = 0;
+}
 
 input.init();
-
-/* ---------- TEMPORÁRIO: referências de escala e velocidade.
-   Substituído pelo galpão procedural em warehouse.js (fatia 4). ---------- */
-(function tempProps() {
-    const crate = new THREE.MeshStandardMaterial({ color: 0xB99760, roughness: 0.85 });
-    const geo = new THREE.BoxGeometry(1.1, 0.9, 1.1);
-    const edges = new THREE.EdgesGeometry(geo, 30);
-    const om = new THREE.LineBasicMaterial({ color: COLOR.ink, transparent: true, opacity: 0.45 });
-
-    for (let i = 0; i < 22; i++) {
-        const m = new THREE.Mesh(geo, crate);
-        const a = (i / 22) * Math.PI * 2;
-        const r = 9 + (i % 4) * 5.5;
-        m.position.set(Math.cos(a) * r, 0.45, Math.sin(a) * r);
-        m.rotation.y = a;
-        m.castShadow = true;
-        m.receiveShadow = true;
-        m.add(new THREE.LineSegments(edges, om));
-        scene.add(m);
-    }
-})();
+respawn();
 
 /* ---------- HUD ---------- */
 const el = {
@@ -82,11 +75,6 @@ function updateHud(dt) {
 }
 
 /* ---------- loop ---------- */
-const STEP = 1 / 60;
-let last = performance.now();
-let acc = 0;
-let fps = 60;
-
 function frame(now) {
     requestAnimationFrame(frame);
     if (document.hidden) { last = now; return; }
@@ -98,26 +86,21 @@ function frame(now) {
 
     input.beginFrame();
 
-    if (input.pressed('retry')) {
-        forklift.reset(0, -6, 0);
-        camera.snapTo(forklift.state);
-        acc = 0;
-    }
+    if (input.pressed('retry')) respawn();
 
     // passo fixo: o feel tem que ser idêntico em 60 e 120 Hz
+    const s = forklift.state;
     acc = Math.min(acc + dt, 0.2);
     while (acc >= STEP) {
-        forklift.step(STEP, input.axes);
         acc -= STEP;
-    }
-
-    // limite suave do piso temporário — nunca prender, só desacelerar
-    const s = forklift.state;
-    const lim = 62;
-    if (Math.abs(s.x) > lim || Math.abs(s.z) > lim) {
-        s.x = THREE.MathUtils.clamp(s.x, -lim, lim);
-        s.z = THREE.MathUtils.clamp(s.z, -lim, lim);
-        s.v *= 0.4;
+        forklift.step(STEP, input.axes);
+        const hit = resolveCollision(s, world.colliders);
+        if (hit) {
+            if (unstick(s, world.colliders)) camera.snapTo(s);   // rede de segurança
+            // step() já escreveu no grafo; a colisão mexeu no estado depois dele
+            forklift.root.position.set(s.x, 0, s.z);
+            if (hit.speed > 0.9) camera.kick(hit.speed * 0.05);
+        }
     }
 
     followSun(s);
