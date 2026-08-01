@@ -1,5 +1,12 @@
 /* Simulador — Formação XR Empilhadeira
-   Tokens espelhados de ../index.html (:root, linhas 14–28). Não divergir. */
+ *
+ * Dois sistemas visuais convivendo de propósito:
+ *  - tokens `--pr-*`  = PRUMO, a plataforma. Violeta, lima, Outfit, pílulas.
+ *  - tokens sem prefixo = a cabine e a HUD, espelhados de ../index.html
+ *    (:root, linhas 14–28). Amarelo hazard, mono em caixa alta, cantos secos.
+ *
+ * O contraste entre portal amigável e cabine técnica é argumento, não descuido:
+ * a plataforma acolhe, a máquina informa. Não unifique os dois. */
 
 :root {
     --ink: #14181C;
@@ -13,7 +20,10 @@
     --signal: #B8352B;
     --deep: #1F5C51;
     --display: "Barlow Condensed", Impact, sans-serif;
-    --body: "IBM Plex Sans", system-ui, sans-serif;
+    /* Outfit no lugar de IBM Plex Sans: geométrica de altura-x grande, é a
+       gramática da referência e cobre do título de 54px ao chip de 12px sem
+       colapsar. Barlow Condensed e Plex Mono continuam — só para a cabine. */
+    --body: "Outfit", system-ui, sans-serif;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
@@ -299,18 +309,11 @@ body.portrait .deck {
     color: rgba(20, 24, 28, .7);
 }
 
-.tbtn.aux {
-    width: 58px;
-    height: 42px;
-    right: calc(102px + env(safe-area-inset-right));
-}
-
-.tbtn.aux.back {
-    bottom: calc(68px + env(safe-area-inset-bottom));
-}
-
-.tbtn.aux.cam {
-    bottom: calc(20px + env(safe-area-inset-bottom));
+/* Enquanto o portal está aberto, a HUD do jogo não pode aparecer nem capturar
+   toque. Regra pequena e fácil de perder numa refatoração — sem ela a leitura
+   de velocidade e o console flutuam por cima da tela de boas-vindas. */
+body:not(.em-jogo) .hud {
+    display: none;
 }
 
 /* ---------- Vinheta e corte em preto ----------
@@ -610,562 +613,514 @@ body.portrait .keyhints {
     display: none;
 }
 
-/* ================= PORTAL ================= */
+
+/* =====================================================================
+   PRUMO — identidade do portal
+   Prefixo --pr- em tudo: os tokens do jogo (--ink, --hazard, --paper…)
+   continuam intocados, porque a HUD depende deles.
+   ===================================================================== */
+
+:root {
+    --pr-violeta: #7A7BF5;
+    --pr-violeta-fundo: #5B5CE0;
+    --pr-tinta: #12121A;
+    --pr-colete: #D8FF4E;
+    --pr-papel: #FFFFFF;
+    --pr-neblina: rgba(18, 18, 26, .62);
+
+    --pr-pill: 999px;
+    --pr-r-folha: 40px;
+    --pr-r-card: 28px;
+    --pr-r-linha: 22px;
+
+    --pr-fonte: "Outfit", system-ui, -apple-system, sans-serif;
+}
+
+/* ---------- base das duas telas ---------- */
 
 .screen {
     position: absolute;
     inset: 0;
     z-index: 14;
     display: none;
+    flex-direction: column;
     pointer-events: auto;
-    overflow-y: auto;
-    background: rgba(20, 24, 28, .62);
-    backdrop-filter: blur(3px);
+    overflow: hidden;
+    font-family: var(--pr-fonte);
+    color: var(--pr-tinta);
+    -webkit-font-smoothing: antialiased;
 }
 
 .screen.is-active {
-    display: block;
-}
-
-.lms {
-    max-width: 880px;
-    margin: 0 auto;
-    min-height: 100%;
-    background: var(--paper);
-    color: var(--ink);
     display: flex;
-    flex-direction: column;
 }
 
-.lms-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 14px 24px;
-    padding-top: calc(14px + env(safe-area-inset-top));
-    border-bottom: 2px solid var(--ink);
-    background: var(--white);
-}
-
-.lms-brand {
-    font-family: var(--display);
-    font-weight: 700;
-    font-size: 19px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-}
-
-.lms-brand b {
-    color: var(--signal);
-}
-
-.lms-tag {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    background: var(--hazard);
-    color: var(--ink);
-    border-radius: 3px;
-    padding: 5px 9px;
-    font-weight: 600;
-}
-
-.lms-body {
-    flex: 1;
-    padding: 26px 24px 40px;
-    padding-bottom: calc(40px + env(safe-area-inset-bottom));
-}
-
-/* ---- acesso ---- */
-
-.lms-body.acesso {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 32px;
-    align-items: start;
-}
-
-.acesso-info .eyebrow {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .2em;
-    text-transform: uppercase;
-    color: var(--signal);
-    margin-bottom: 13px;
-}
-
-.acesso-info h1 {
-    font-family: var(--display);
-    font-weight: 700;
-    font-size: clamp(30px, 5vw, 44px);
-    line-height: .98;
-    text-transform: uppercase;
-    margin-bottom: 14px;
-}
-
-.acesso-info p {
-    font-size: 14px;
-    color: var(--steel);
-    max-width: 46ch;
-    margin-bottom: 16px;
-}
-
-.ticks {
-    list-style: none;
-}
-
-.ticks li {
-    font-size: 13px;
-    color: var(--steel);
-    padding: 6px 0 6px 20px;
-    position: relative;
-}
-
-.ticks li::before {
-    content: "✓";
+/* Scrim só no topo: a marca fica legível sem apagar o galpão inteiro. */
+.screen::before {
+    content: "";
     position: absolute;
-    left: 0;
-    color: var(--deep);
-    font-weight: 700;
+    inset: 0 0 auto;
+    height: 38vh;
+    min-height: 170px;
+    background: linear-gradient(180deg, rgba(18, 18, 26, .72), rgba(18, 18, 26, 0));
+    pointer-events: none;
 }
 
-.acesso-form {
-    background: var(--white);
-    border: 1px solid var(--line);
-    border-top: 4px solid var(--hazard);
-    border-radius: 3px;
-    padding: 20px;
+#scr-painel::before {
+    height: 22vh;
+    min-height: 110px;
 }
 
-.af-lbl {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--slate);
-    margin-bottom: 14px;
-}
+/* ---------- barra ---------- */
 
-.fld {
-    display: block;
-    margin-bottom: 13px;
-}
-
-.fld span {
-    display: block;
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--slate);
-    margin-bottom: 5px;
-}
-
-.fld input,
-.fld select,
-.fld .ro {
-    width: 100%;
-    font-family: var(--body);
-    font-size: 14px;
-    color: var(--ink);
-    background: var(--paper);
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    padding: 10px 11px;
-}
-
-.fld .ro {
-    font-family: var(--mono);
-    font-size: 12.5px;
-    color: var(--slate);
-    background: var(--concrete);
-}
-
-.fld input:focus,
-.fld select:focus {
-    outline: none;
-    border-color: var(--ink);
-}
-
-.fld-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-}
-
-.bt {
-    width: 100%;
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    font-weight: 600;
-    background: var(--ink);
-    color: var(--white);
-    border: 1px solid var(--ink);
-    border-radius: 3px;
-    padding: 13px 16px;
-    cursor: pointer;
-    margin-top: 4px;
-}
-
-.bt:hover {
-    background: var(--steel);
-}
-
-.bt.ghost {
-    background: transparent;
-    color: var(--ink);
-}
-
-.af-foot {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--slate);
-    line-height: 1.7;
-    margin-top: 12px;
-}
-
-/* ---- crachá ---- */
-
-.cracha {
+.barra {
+    position: relative;
+    z-index: 2;
+    flex: none;
     display: flex;
     align-items: center;
-    gap: 10px;
-}
-
-.ch-ini {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: var(--deep);
+    gap: 12px;
+    padding: calc(18px + env(safe-area-inset-top)) 24px 0;
     color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 600;
 }
 
-.ch-nome {
-    font-family: var(--display);
-    font-weight: 700;
-    font-size: 15px;
-    text-transform: uppercase;
-    line-height: 1.1;
-}
-
-.ch-meta {
-    font-family: var(--mono);
-    font-size: 8.5px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--slate);
-}
-
-.ch-sair {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    background: transparent;
-    border: 1px solid var(--line);
-    border-radius: 3px;
-    padding: 7px 10px;
-    cursor: pointer;
-    color: var(--slate);
-    margin-left: 6px;
-}
-
-/* ---- progresso e lista ---- */
-
-.prog {
-    margin-bottom: 20px;
-}
-
-.prog-k,
-.prog-v {
-    font-family: var(--mono);
-    font-size: 9.5px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--slate);
-}
-
-.prog-bar {
-    height: 8px;
-    background: var(--concrete);
-    border: 1px solid var(--line);
-    border-radius: 2px;
-    margin: 7px 0 5px;
-    overflow: hidden;
-}
-
-.prog-bar i {
+.marca {
+    height: 26px;
+    width: auto;
     display: block;
-    height: 100%;
-    background: var(--deep);
-}
-
-.lista {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-}
-
-.lv {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    background: var(--white);
-    padding: 14px 16px;
-    cursor: pointer;
-    border-left: 4px solid transparent;
-}
-
-.lv-n {
-    font-family: var(--mono);
-    font-size: 9.5px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--slate);
-    width: 62px;
     flex: none;
 }
 
-.lv-b {
-    flex: 1;
-    min-width: 0;
-}
-
-.lv-t {
-    font-family: var(--display);
-    font-weight: 700;
-    font-size: 19px;
-    text-transform: uppercase;
-    line-height: 1.05;
-}
-
-.lv-m {
-    font-family: var(--mono);
-    font-size: 9px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--slate);
-    margin-top: 3px;
-}
-
-.lv-a {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
+.chip-demo {
+    margin-left: auto;
+    flex: none;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--ink);
-    white-space: nowrap;
+    letter-spacing: .04em;
+    padding: 6px 14px;
+    border-radius: var(--pr-pill);
+    border: 1.5px solid rgba(255, 255, 255, .5);
+    color: #fff;
 }
 
-.lv.is-concluido {
-    border-left-color: var(--deep);
+/* ---------- a folha: superfície única do portal ---------- */
+
+.folha {
+    position: relative;
+    margin-top: auto;
+    background: var(--pr-violeta);
+    border-radius: var(--pr-r-folha) var(--pr-r-folha) 0 0;
+    padding: 0 26px calc(28px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
 }
 
-.lv.is-concluido .lv-t {
-    color: var(--slate);
+/* Sem isto, numa tela baixa o flex esmaga os cards em vez de deixar rolar. */
+.folha>* {
+    flex: none;
 }
 
-.lv.is-disponivel {
-    border-left-color: var(--hazard);
-    background: var(--concrete);
+/* =====================================================================
+   TELA 1 — BEM-VINDO DE VOLTA
+   ===================================================================== */
+
+#scr-boas .folha {
+    min-height: 64%;
 }
 
-.lv.is-disponivel:hover {
-    background: #DFDBD1;
+.avatar {
+    width: 132px;
+    height: 132px;
+    margin: -66px auto 0;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 0 0 9px var(--pr-violeta);
+    animation: prSobe .5s cubic-bezier(.2, 1.25, .4, 1) both;
 }
 
-/* Faixa listrada: o nível bloqueado É o argumento de venda, tem que parecer
-   deliberadamente fechado e não quebrado. */
-.lv.is-bloqueado {
-    border-left-color: var(--slate);
-    background:
-        repeating-linear-gradient(45deg, var(--white) 0 9px, #EFECE5 9px 18px);
-}
-
-.lv.is-bloqueado .lv-t,
-.lv.is-bloqueado .lv-n {
-    color: #9BA3AB;
-}
-
-.nota-demo {
-    font-family: var(--mono);
-    font-size: 9.5px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    color: var(--slate);
-    line-height: 1.8;
-    margin-top: 18px;
-    border-left: 3px solid var(--hazard);
-    padding-left: 12px;
-}
-
-.trava {
-    position: fixed;
-    left: 50%;
-    bottom: 26px;
-    transform: translateX(-50%) translateY(10px);
-    background: var(--ink);
-    color: var(--white);
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-    padding: 12px 18px;
-    border-radius: 3px;
-    opacity: 0;
-    transition: opacity .2s ease, transform .2s ease;
-    max-width: 90vw;
-    text-align: center;
-}
-
-.trava.on {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-}
-
-/* ---- briefing ---- */
-
-.bf-n {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .2em;
-    text-transform: uppercase;
-    color: var(--signal);
-    margin-bottom: 10px;
-}
-
-.lms-body.brief h1 {
-    font-family: var(--display);
-    font-weight: 700;
-    font-size: clamp(28px, 5vw, 40px);
-    line-height: 1;
-    text-transform: uppercase;
-    margin-bottom: 12px;
-}
-
-.lms-body.brief p {
-    font-size: 14px;
-    color: var(--steel);
-    max-width: 56ch;
-    margin-bottom: 20px;
-}
-
-.bf-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--line);
-    border: 1px solid var(--line);
-    margin-bottom: 22px;
-}
-
-.bf-card {
-    background: var(--white);
-    padding: 16px 18px;
-}
-
-.bf-k {
-    font-family: var(--mono);
-    font-size: 9.5px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--slate);
-    margin-bottom: 10px;
-}
-
-.bf-card ol {
-    padding-left: 16px;
-}
-
-.bf-card li {
-    font-size: 13px;
-    color: var(--steel);
-    margin-bottom: 7px;
-    line-height: 1.5;
-}
-
-.ctrls div {
-    font-family: var(--mono);
-    font-size: 10px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    color: var(--slate);
-    padding: 5px 0;
-    border-bottom: 1px dashed var(--line);
-}
-
-.ctrls div:last-child {
-    border-bottom: none;
-}
-
-.ctrls b {
-    color: var(--ink);
-    font-weight: 600;
-}
-
-.ctrls.toque {
-    display: none;
-}
-
-body.touch .ctrls.desk {
-    display: none;
-}
-
-body.touch .ctrls.toque {
+.avatar svg {
+    width: 100%;
+    height: 100%;
     display: block;
 }
 
-.bf-act {
+.saudacao {
+    margin: 30px 0 0;
+    text-align: center;
+    font-size: clamp(38px, 10.5vw, 54px);
+    font-weight: 800;
+    line-height: .97;
+    letter-spacing: -.035em;
+}
+
+/* O nome dentro da pílula: é a plataforma reconhecendo quem chegou. */
+.saudacao b {
+    display: inline-block;
+    margin-top: 8px;
+    font-weight: 800;
+    background: var(--pr-tinta);
+    color: var(--pr-colete);
+    border-radius: var(--pr-pill);
+    padding: .04em .34em .12em;
+    /* body tem user-select:none; o nome é editável ao trocar de conta */
+    -webkit-user-select: text;
+    user-select: text;
+}
+
+.saudacao b:focus {
+    outline: 3px solid var(--pr-colete);
+    outline-offset: 3px;
+}
+
+/* margin-top:auto — todo o vazio da tela se acumula ANTES do botão. */
+.acao {
+    margin-top: auto;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 64px;
+    border: 0;
+    border-radius: var(--pr-pill);
+    background: var(--pr-papel);
+    color: var(--pr-tinta);
+    font-family: inherit;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.015em;
+    cursor: pointer;
+    transition: transform .12s ease;
+}
+
+.acao:active {
+    transform: translateY(2px);
+}
+
+/* A seta mora num disco tinta: a mesma gramática de pílula, em miniatura. */
+.acao i {
+    width: 32px;
+    height: 32px;
+    flex: none;
+    margin-right: -8px;
+    border-radius: 50%;
+    background: var(--pr-tinta);
+    color: var(--pr-colete);
+    display: grid;
+    place-items: center;
+}
+
+.acao svg {
+    width: 17px;
+    height: 17px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.ligacao {
+    margin: 14px auto 0;
+    background: none;
+    border: 0;
+    min-height: 44px;
+    padding: 10px 18px;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--pr-neblina);
+    cursor: pointer;
+}
+
+/* =====================================================================
+   TELA 2 — PAINEL
+   ===================================================================== */
+
+#scr-painel .folha {
+    min-height: 82%;
+}
+
+.eu {
+    width: 42px;
+    height: 42px;
+    flex: none;
+    border-radius: 50%;
+    border: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--pr-colete);
+    cursor: pointer;
+}
+
+.eu svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.trilho {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 26px 0 18px;
+}
+
+.trilho h1 {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -.035em;
+    line-height: 1;
+}
+
+.norma {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    background: var(--pr-tinta);
+    color: var(--pr-colete);
+    border-radius: var(--pr-pill);
+    padding: 5px 12px;
+}
+
+/* Substitui a barra de progresso E a frase "4 de 6 níveis concluídos". */
+.passo {
+    font-weight: 800;
+    letter-spacing: -.045em;
+    line-height: .85;
+    white-space: nowrap;
+}
+
+.passo b {
+    font-size: 54px;
+}
+
+.passo i {
+    font-style: normal;
+    font-size: 24px;
+    color: rgba(18, 18, 26, .45);
+}
+
+.niveis {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
 }
 
-.bf-act .bt {
-    width: auto;
+.nv {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--pr-papel);
+    border-radius: var(--pr-r-linha);
+    padding: 0 18px;
+    min-height: 58px;
+}
+
+.nv em {
+    font-style: normal;
+    font-weight: 700;
+    font-size: 13px;
+    color: rgba(18, 18, 26, .34);
+    width: 22px;
+    flex: none;
+}
+
+.nv span {
     flex: 1;
+    min-width: 0;
+    font-weight: 700;
+    font-size: 18px;
+    letter-spacing: -.02em;
 }
 
-/* Enquanto o portal está aberto, a HUD do jogo não pode aparecer nem capturar toque. */
-body:not(.em-jogo) .hud {
-    display: none;
+.nv b {
+    flex: none;
+    font-weight: 700;
+    font-size: 14px;
+    background: rgba(18, 18, 26, .07);
+    border-radius: var(--pr-pill);
+    padding: 5px 11px;
 }
 
-@media (max-width:720px) {
+/* Bloqueado: o cadeado basta. Sem listra de obra, sem toast explicando. */
+.nv.travado {
+    background: rgba(255, 255, 255, .4);
+}
 
-    .lms-body.acesso,
-    .bf-grid {
-        grid-template-columns: 1fr;
+.nv.travado span,
+.nv.travado em {
+    color: rgba(18, 18, 26, .42);
+}
+
+.cadeado {
+    width: 19px;
+    height: 19px;
+    flex: none;
+    color: rgba(18, 18, 26, .4);
+}
+
+/* O único card tinta e o único objeto lima: não há como errar onde tocar. */
+.nv.agora {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "n p" "t p" "m p";
+    align-items: center;
+    column-gap: 16px;
+    background: var(--pr-tinta);
+    border-radius: var(--pr-r-card);
+    padding: 20px 20px 20px 22px;
+    min-height: 118px;
+}
+
+.nv.agora em {
+    grid-area: n;
+    width: auto;
+    font-size: 13px;
+    letter-spacing: .06em;
+    color: var(--pr-colete);
+}
+
+.nv.agora span {
+    grid-area: t;
+    font-size: 32px;
+    line-height: 1.08;
+    letter-spacing: -.035em;
+    color: #fff;
+}
+
+.nv.agora i {
+    grid-area: m;
+    font-style: normal;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, .55);
+}
+
+.play {
+    grid-area: p;
+    width: 70px;
+    height: 70px;
+    flex: none;
+    border: 0;
+    border-radius: 50%;
+    background: var(--pr-colete);
+    color: var(--pr-tinta);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: transform .12s ease;
+    animation: prPulso 2.8s ease-out 1.2s infinite;
+}
+
+.play:active {
+    transform: scale(.94);
+}
+
+.play svg {
+    width: 30px;
+    height: 30px;
+    margin-left: 3px;
+    /* centragem óptica do triângulo */
+}
+
+/* ---------- movimento: dois keyframes, e só ---------- */
+
+@keyframes prSobe {
+    from {
+        opacity: 0;
+        transform: translateY(16px) scale(.94);
     }
 
-    .acesso-info {
-        order: 2;
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes prPulso {
+
+    0%,
+    72% {
+        box-shadow: 0 0 0 0 rgba(216, 255, 78, .55);
     }
 
-    .acesso-form {
-        order: 1;
+    100% {
+        box-shadow: 0 0 0 16px rgba(216, 255, 78, 0);
+    }
+}
+
+@media (prefers-reduced-motion:reduce) {
+
+    .avatar,
+    .play {
+        animation: none;
+    }
+}
+
+/* ---------- desktop: a folha vira painel flutuante sobre a cena ---------- */
+
+@media (min-width:760px) {
+    .screen {
+        align-items: center;
+        justify-content: center;
     }
 
-    .lv-n {
-        width: 52px;
+    .screen::before {
+        display: none;
     }
 
-    .lv-t {
-        font-size: 16px;
+    .barra {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .folha {
+        margin: 0;
+        width: min(520px, 92vw);
+        border-radius: var(--pr-r-folha);
+        padding: 0 40px 40px;
+        box-shadow: 0 30px 80px rgba(10, 10, 22, .5);
+    }
+
+    #scr-boas .folha {
+        min-height: 0;
+    }
+
+    #scr-boas .acao {
+        margin-top: 36px;
+    }
+
+    #scr-painel .folha {
+        min-height: 0;
+        max-height: 88vh;
+    }
+}
+
+/* Celular baixo / paisagem: encolhe o avatar em vez de rolar. */
+@media (max-height:640px) and (max-width:759px) {
+    .avatar {
+        width: 104px;
+        height: 104px;
+        margin-top: -52px;
+        box-shadow: 0 0 0 7px var(--pr-violeta);
+    }
+
+    .saudacao {
+        margin-top: 22px;
+        font-size: clamp(32px, 9vw, 42px);
     }
 }
 

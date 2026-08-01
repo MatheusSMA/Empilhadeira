@@ -107,6 +107,9 @@ if (DEBUG) {
     dbg = document.createElement('div');
     dbg.className = 'debug';
     document.querySelector('.hud').appendChild(dbg);
+    // Introspecção só com ?debug=1: sem isto não há como ver por que a missão
+    // não avança, porque todo o estado vive em closure de módulo.
+    window.__dbg = { forklift, palletSys, mission, world, camera, get emJogo() { return emJogo; } };
 }
 
 const fmt = (n, d = 1) => n.toFixed(d).replace('.', ',');
