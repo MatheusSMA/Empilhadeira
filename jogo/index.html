@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#14181C">
+    <title>Simulador — Formação XR Empilhadeira</title>
+    <meta name="description" content="Demonstração jogável da trilha de formação XR de operador de empilhadeira (NR-11).">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./ui.css">
+
+    <!-- Three.js vendorizado no repo: rede de reunião corporativa não derruba a demo.
+         Trocar por CDN = mudar só este valor. -->
+    <script type="importmap">
+        { "imports": { "three": "./vendor/three.module.min.js" } }
+    </script>
+</head>
+
+<body>
+    <canvas id="stage"></canvas>
+
+    <div id="overlay">
+        <div class="hud">
+            <div class="readout">
+                <div class="k">Velocidade</div>
+                <div class="v"><span id="rSpeed">0,0</span><small>km/h</small></div>
+                <div class="div"></div>
+                <div class="k">Altura do garfo</div>
+                <div class="sub"><span id="rFork">0,06</span> m</div>
+            </div>
+
+            <div class="brandtag">
+                Formação XR · Empilhadeira<br>
+                <b>Demonstração jogável</b><br>
+                Base NR-11
+            </div>
+
+            <div class="keyhints">
+                <span><b>W A S D</b> dirigir</span>
+                <span><b>Q E</b> garfo</span>
+                <span><b>Z X</b> torre</span>
+                <span><b>espaço</b> buzina</span>
+                <span><b>R</b> reiniciar</span>
+            </div>
+
+            <div class="touchui">
+                <div class="stick-zone" id="stickZone">
+                    <div class="stick" id="stick">
+                        <i id="stickKnob"></i>
+                    </div>
+                </div>
+                <div class="btn-zone">
+                    <div class="tbtn fork up" data-btn="forkUp">▲</div>
+                    <div class="tbtn fork dn" data-btn="forkDown">▼</div>
+                    <div class="tbtn tilt f" data-btn="tiltFwd">Torre ◄</div>
+                    <div class="tbtn tilt b" data-btn="tiltBack">Torre ►</div>
+                    <div class="tbtn honk" data-btn="honk">Buzina</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="nowebgl" hidden>
+        <div class="box">
+            <div class="lbl">Não foi possível iniciar</div>
+            <h1>Esta demonstração precisa de aceleração gráfica</h1>
+            <p>O navegador deste computador está sem WebGL — normalmente por política de TI ou driver de vídeo
+                desativado. A proposta completa, com as calculadoras, continua acessível.</p>
+            <a href="../">← Voltar para a proposta</a>
+        </div>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>

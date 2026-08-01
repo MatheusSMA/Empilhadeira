@@ -1,0 +1,198 @@
+/* input.js — camada de input unificada.
+ *
+ * Contrato único: o código de jogo lê `input.axes` / `input.held` / `input.pressed()`
+ * e NUNCA pergunta se é celular. Teclado e toque mesclam no mesmo frame — num
+ * notebook com tela sensível o usuário pode misturar os dois.
+ */
+
+const KEYMAP = {
+    drive: { pos: ['KeyW', 'ArrowUp'], neg: ['KeyS', 'ArrowDown'] },
+    steer: { pos: ['KeyA', 'ArrowLeft'], neg: ['KeyD', 'ArrowRight'] }, // + = esquerda
+    fork: { pos: ['KeyQ'], neg: ['KeyE'] },
+    tilt: { pos: ['KeyX'], neg: ['KeyZ'] },
+};
+const BTNKEYS = { honk: ['Space'], retry: ['KeyR'], pause: ['Escape'] };
+
+const held = new Set();          // teclas fisicamente pressionadas
+const touchBtn = Object.create(null); // botões de toque pressionados
+
+const state = {
+    axes: { drive: 0, steer: 0, fork: 0, tilt: 0 },
+    held: { honk: false, retry: false, pause: false },
+    source: 'keyboard',
+    enabled: true,
+};
+let prevHeld = { honk: false, retry: false, pause: false };
+
+/* ---------- teclado ---------- */
+
+function axisFromKeys(map) {
+    const p = map.pos.some(k => held.has(k)) ? 1 : 0;
+    const n = map.neg.some(k => held.has(k)) ? 1 : 0;
+    return p - n;
+}
+
+addEventListener('keydown', e => {
+    if (e.repeat) return;
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    held.add(e.code);
+    // Espaço rola a página; setas idem. Não queremos nenhum dos dois.
+    if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => held.delete(e.code));
+// Sem isto a empilhadeira sai andando sozinha quando o usuário troca de aba.
+addEventListener('blur', () => held.clear());
+addEventListener('visibilitychange', () => { if (document.hidden) held.clear(); });
+
+/* ---------- joystick analógico de origem dinâmica ---------- */
+
+const RADIUS = 60;   // px até a deflexão máxima
+const DEAD = 0.12; // deadzone normalizada
+
+const stick = { x: 0, y: 0 };
+let pointerId = null;
+let origin = null;
+let elStick = null, elKnob = null;
+
+function stickReset() {
+    pointerId = null;
+    origin = null;
+    stick.x = 0;
+    stick.y = 0;
+    if (elStick) elStick.classList.remove('on');
+    if (elKnob) elKnob.style.transform = 'translate3d(-26px,-26px,0)';
+}
+
+function stickMove(cx, cy) {
+    const dx = cx - origin.x;
+    const dy = cy - origin.y;
+    const len = Math.hypot(dx, dy) || 1;
+
+    let m = Math.min(len / RADIUS, 1);
+    m = m <= DEAD ? 0 : (m - DEAD) / (1 - DEAD);
+    m = m * m; // curva quadrática: sem ela só existe "parado" e "voando"
+
+    const ux = dx / len, uy = dy / len;
+    stick.x = ux * m;
+    stick.y = -uy * m; // Y da tela cresce para baixo
+
+    if (elKnob) {
+        const kx = ux * Math.min(len, RADIUS);
+        const ky = uy * Math.min(len, RADIUS);
+        elKnob.style.transform = `translate3d(${kx - 26}px,${ky - 26}px,0)`;
+    }
+}
+
+function bindStick(zone, stickEl, knobEl) {
+    elStick = stickEl;
+    elKnob = knobEl;
+
+    zone.addEventListener('pointerdown', e => {
+        if (pointerId !== null) return;          // um segundo dedo não rouba o stick
+        pointerId = e.pointerId;
+        zone.setPointerCapture(e.pointerId);     // impede o stick de "grudar" ao sair da zona
+        origin = { x: e.clientX, y: e.clientY };
+        stickEl.style.left = e.clientX - zone.getBoundingClientRect().left + 'px';
+        stickEl.style.top = e.clientY - zone.getBoundingClientRect().top + 'px';
+        stickEl.classList.add('on');
+        markTouch();
+        e.preventDefault();
+    }, { passive: false });
+
+    zone.addEventListener('pointermove', e => {
+        if (e.pointerId !== pointerId) return;
+        stickMove(e.clientX, e.clientY);
+        e.preventDefault();
+    }, { passive: false });
+
+    const release = e => {
+        if (e.pointerId !== pointerId) return;
+        stickReset();
+    };
+    zone.addEventListener('pointerup', release);
+    // iOS dispara pointercancel em gestos de sistema. Sem tratar, a empilhadeira acelera para sempre.
+    zone.addEventListener('pointercancel', release);
+    zone.addEventListener('lostpointercapture', release);
+}
+
+/* ---------- botões de toque ---------- */
+
+function bindButton(el) {
+    const name = el.dataset.btn;
+    const down = e => {
+        touchBtn[name] = true;
+        el.classList.add('on');
+        markTouch();
+        e.preventDefault();
+    };
+    const up = e => {
+        touchBtn[name] = false;
+        el.classList.remove('on');
+        e.preventDefault();
+    };
+    el.addEventListener('pointerdown', down, { passive: false });
+    el.addEventListener('pointerup', up, { passive: false });
+    el.addEventListener('pointercancel', up, { passive: false });
+    el.addEventListener('pointerleave', up, { passive: false });
+}
+
+/* ---------- detecção de fonte (nunca por user-agent) ---------- */
+
+function markTouch() {
+    if (state.source === 'touch') return;
+    state.source = 'touch';
+    document.body.classList.add('touch');
+}
+
+addEventListener('pointerdown', e => {
+    if (e.pointerType === 'touch') markTouch();
+}, { capture: true });
+
+/* ---------- API ---------- */
+
+export const input = {
+    axes: state.axes,
+    held: state.held,
+    get source() { return state.source; },
+
+    init() {
+        const zone = document.getElementById('stickZone');
+        if (zone) bindStick(zone, document.getElementById('stick'), document.getElementById('stickKnob'));
+        document.querySelectorAll('[data-btn]').forEach(bindButton);
+        // Se o aparelho é primariamente de toque, já mostra os controles sem esperar o primeiro toque.
+        if (matchMedia('(hover: none) and (pointer: coarse)').matches) markTouch();
+        stickReset();
+    },
+
+    setEnabled(v) {
+        state.enabled = v;
+        if (!v) { held.clear(); stickReset(); for (const k in touchBtn) touchBtn[k] = false; }
+    },
+
+    /** Chamado no topo do RAF. Mescla as fontes e calcula as bordas de subida. */
+    beginFrame() {
+        prevHeld = { ...state.held };
+        const a = state.axes;
+
+        if (!state.enabled) {
+            a.drive = a.steer = a.fork = a.tilt = 0;
+            state.held.honk = state.held.retry = state.held.pause = false;
+            return;
+        }
+
+        const cl = v => Math.max(-1, Math.min(1, v));
+        a.drive = cl(axisFromKeys(KEYMAP.drive) + stick.y);
+        a.steer = cl(axisFromKeys(KEYMAP.steer) - stick.x); // stick para a direita = virar à direita
+        a.fork = cl(axisFromKeys(KEYMAP.fork) + (touchBtn.forkUp ? 1 : 0) - (touchBtn.forkDown ? 1 : 0));
+        a.tilt = cl(axisFromKeys(KEYMAP.tilt) + (touchBtn.tiltBack ? 1 : 0) - (touchBtn.tiltFwd ? 1 : 0));
+
+        state.held.honk = BTNKEYS.honk.some(k => held.has(k)) || !!touchBtn.honk;
+        state.held.retry = BTNKEYS.retry.some(k => held.has(k)) || !!touchBtn.retry;
+        state.held.pause = BTNKEYS.pause.some(k => held.has(k));
+    },
+
+    /** true apenas no frame em que o botão desceu. */
+    pressed(name) {
+        return !!state.held[name] && !prevHeld[name];
+    },
+};
