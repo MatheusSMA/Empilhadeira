@@ -615,30 +615,32 @@ body.portrait .keyhints {
 
 
 /* =====================================================================
-   PRUMO — identidade do portal
-   Prefixo --pr- em tudo: os tokens do jogo (--ink, --hazard, --paper…)
-   continuam intocados, porque a HUD depende deles.
+   PRUMO — portal
+   Medidas tiradas do design renderizado a 390×844: cores, pesos, tamanhos
+   e entreletras vieram do DOM, não de estimativa. O layout foi reescrito
+   em fluxo (flex/grid) em vez de posição absoluta, para sobreviver a
+   telas de 320 a 900 de largura.
+   Prefixo --pr- / .pr- em tudo: os tokens da cabine (--ink, --hazard,
+   --paper…) continuam intocados, porque a HUD depende deles.
    ===================================================================== */
 
 :root {
     --pr-violeta: #7A7BF5;
-    --pr-violeta-fundo: #5B5CE0;
     --pr-tinta: #12121A;
     --pr-colete: #D8FF4E;
     --pr-papel: #FFFFFF;
-    --pr-neblina: rgba(18, 18, 26, .62);
 
     --pr-pill: 999px;
-    --pr-r-folha: 40px;
     --pr-r-card: 28px;
-    --pr-r-linha: 22px;
+    --pr-r-linha: 24px;
+    --pr-lado: 24px;
 
     --pr-fonte: "Outfit", system-ui, -apple-system, sans-serif;
 }
 
-/* ---------- base das duas telas ---------- */
+/* ---------- base ---------- */
 
-.screen {
+.screen.pr {
     position: absolute;
     inset: 0;
     z-index: 14;
@@ -646,481 +648,632 @@ body.portrait .keyhints {
     flex-direction: column;
     pointer-events: auto;
     overflow: hidden;
-    font-family: var(--pr-fonte);
+    background: var(--pr-violeta);
     color: var(--pr-tinta);
+    font-family: var(--pr-fonte);
     -webkit-font-smoothing: antialiased;
 }
 
-.screen.is-active {
+.screen.pr.is-active {
     display: flex;
 }
 
-/* Scrim só no topo: a marca fica legível sem apagar o galpão inteiro. */
-.screen::before {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto;
-    height: 38vh;
-    min-height: 170px;
-    background: linear-gradient(180deg, rgba(18, 18, 26, .72), rgba(18, 18, 26, 0));
-    pointer-events: none;
+.pr-corpo {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 var(--pr-lado) 24px;
 }
 
-#scr-painel::before {
-    height: 22vh;
-    min-height: 110px;
+.pr-corpo-topo {
+    padding-top: calc(44px + env(safe-area-inset-top));
 }
 
-/* ---------- barra ---------- */
+/* Espaço para a barra de abas não cobrir o fim da lista. */
+body.pr-abas .pr-corpo {
+    padding-bottom: calc(106px + env(safe-area-inset-bottom));
+}
 
-.barra {
-    position: relative;
-    z-index: 2;
+/* ---------- marca ---------- */
+
+.pr-top {
     flex: none;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
-    padding: calc(18px + env(safe-area-inset-top)) 24px 0;
-    color: #fff;
+    padding: calc(48px + env(safe-area-inset-top)) var(--pr-lado) 0;
 }
 
-.marca {
+.pr-marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--pr-tinta);
+}
+
+.pr-mk {
+    width: 20px;
     height: 26px;
-    width: auto;
     display: block;
     flex: none;
 }
 
-.chip-demo {
-    margin-left: auto;
+.pr-marca b {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: .16em;
+}
+
+.pr-top-sm {
+    padding-top: calc(44px + env(safe-area-inset-top));
+}
+
+.pr-marca-sm .pr-mk {
+    width: 16px;
+    height: 21px;
+}
+
+.pr-marca-sm b {
+    font-size: 15px;
+}
+
+.pr-eu {
+    width: 42px;
+    height: 42px;
     flex: none;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: .04em;
-    padding: 6px 14px;
-    border-radius: var(--pr-pill);
-    border: 1.5px solid rgba(255, 255, 255, .5);
-    color: #fff;
-}
-
-/* ---------- a folha: superfície única do portal ---------- */
-
-.folha {
-    position: relative;
-    margin-top: auto;
-    background: var(--pr-violeta);
-    border-radius: var(--pr-r-folha) var(--pr-r-folha) 0 0;
-    padding: 0 26px calc(28px + env(safe-area-inset-bottom));
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Sem isto, numa tela baixa o flex esmaga os cards em vez de deixar rolar. */
-.folha>* {
-    flex: none;
-}
-
-/* =====================================================================
-   TELA 1 — BEM-VINDO DE VOLTA
-   ===================================================================== */
-
-#scr-boas .folha {
-    min-height: 64%;
-}
-
-.avatar {
-    width: 132px;
-    height: 132px;
-    margin: -66px auto 0;
+    padding: 0;
+    border: 0;
     border-radius: 50%;
-    overflow: hidden;
-    box-shadow: 0 0 0 9px var(--pr-violeta);
-    animation: prSobe .5s cubic-bezier(.2, 1.25, .4, 1) both;
+    background: none;
+    cursor: pointer;
 }
 
-.avatar svg {
+.pr-eu svg {
     width: 100%;
     height: 100%;
     display: block;
 }
 
-.saudacao {
-    margin: 30px 0 0;
-    text-align: center;
-    font-size: clamp(38px, 10.5vw, 54px);
-    font-weight: 800;
-    line-height: .97;
-    letter-spacing: -.035em;
+/* =====================================================================
+   TELA — BEM-VINDO DE VOLTA
+   ===================================================================== */
+
+.pr-boas {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0 28px calc(28px + env(safe-area-inset-bottom));
 }
 
-/* O nome dentro da pílula: é a plataforma reconhecendo quem chegou. */
-.saudacao b {
-    display: inline-block;
-    margin-top: 8px;
+/* margin-top:auto acima do avatar e nada abaixo do nome: todo o vazio da
+   tela se acumula ANTES do bloco, e o botão fica no fim, óbvio. */
+.pr-avatar-g {
+    margin-top: auto;
+    width: 83px;
+    height: 83px;
+    margin-bottom: 24px;
+    margin-left: 7px;
+}
+
+.pr-avatar-g svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.pr-ola {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    color: var(--pr-tinta);
+}
+
+.pr-nome {
+    font-size: clamp(40px, 13.3vw, 52px);
     font-weight: 800;
-    background: var(--pr-tinta);
-    color: var(--pr-colete);
-    border-radius: var(--pr-pill);
-    padding: .04em .34em .12em;
-    /* body tem user-select:none; o nome é editável ao trocar de conta */
+    line-height: 1.27;
+    letter-spacing: -.035em;
+    color: var(--pr-papel);
+    margin-bottom: 18px;
+    /* body tem user-select:none; o nome é editável ao trocar de operador */
     -webkit-user-select: text;
     user-select: text;
 }
 
-.saudacao b:focus {
+.pr-nome:focus {
     outline: 3px solid var(--pr-colete);
-    outline-offset: 3px;
+    outline-offset: 4px;
+    border-radius: 6px;
 }
 
-/* margin-top:auto — todo o vazio da tela se acumula ANTES do botão. */
-.acao {
+.pr-cta {
     margin-top: auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 14px;
     width: 100%;
-    min-height: 64px;
+    min-height: 60px;
     border: 0;
     border-radius: var(--pr-pill);
-    background: var(--pr-papel);
+    background: var(--pr-colete);
     color: var(--pr-tinta);
     font-family: inherit;
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 700;
-    letter-spacing: -.015em;
+    letter-spacing: -.01em;
     cursor: pointer;
     transition: transform .12s ease;
 }
 
-.acao:active {
+.pr-cta:active {
     transform: translateY(2px);
 }
 
-/* A seta mora num disco tinta: a mesma gramática de pílula, em miniatura. */
-.acao i {
-    width: 32px;
-    height: 32px;
+.pr-seta {
+    width: 22px;
+    height: 22px;
     flex: none;
-    margin-right: -8px;
-    border-radius: 50%;
-    background: var(--pr-tinta);
-    color: var(--pr-colete);
-    display: grid;
-    place-items: center;
-}
-
-.acao svg {
-    width: 17px;
-    height: 17px;
-    display: block;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 2.6;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-.ligacao {
-    margin: 14px auto 0;
-    background: none;
-    border: 0;
-    min-height: 44px;
-    padding: 10px 18px;
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--pr-neblina);
-    cursor: pointer;
 }
 
 /* =====================================================================
-   TELA 2 — PAINEL
+   TELA — INÍCIO
    ===================================================================== */
 
-#scr-painel .folha {
-    min-height: 82%;
+.pr-curso {
+    position: relative;
+    background: var(--pr-papel);
+    border-radius: var(--pr-r-card);
+    padding: 26px 24px 24px;
+    margin-top: 30px;
 }
 
-.eu {
-    width: 42px;
-    height: 42px;
-    flex: none;
-    border-radius: 50%;
-    border: 0;
-    padding: 0;
-    overflow: hidden;
-    background: var(--pr-colete);
-    cursor: pointer;
-}
-
-.eu svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.trilho {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 26px 0 18px;
-}
-
-.trilho h1 {
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -.035em;
-    line-height: 1;
-}
-
-.norma {
+.pr-norma {
     display: inline-block;
-    margin-top: 10px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: .06em;
     background: var(--pr-tinta);
     color: var(--pr-colete);
     border-radius: var(--pr-pill);
-    padding: 5px 12px;
+    padding: 5px 13px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .08em;
 }
 
-/* Substitui a barra de progresso E a frase "4 de 6 níveis concluídos". */
-.passo {
+.pr-curso h1 {
+    font-size: clamp(30px, 9.7vw, 38px);
     font-weight: 800;
-    letter-spacing: -.045em;
-    line-height: .85;
-    white-space: nowrap;
+    line-height: 1;
+    letter-spacing: -.035em;
+    margin-top: 16px;
 }
 
-.passo b {
-    font-size: 54px;
+.pr-emp {
+    position: absolute;
+    top: 28px;
+    right: 24px;
+    width: 52px;
+    height: 52px;
 }
 
-.passo i {
-    font-style: normal;
-    font-size: 24px;
-    color: rgba(18, 18, 26, .45);
+.pr-segs {
+    display: flex;
+    gap: 5px;
+    margin-top: 26px;
 }
 
-.niveis {
+.pr-segs i {
+    flex: 1;
+    height: 12px;
+    border-radius: var(--pr-pill);
+    background: var(--pr-tinta);
+}
+
+.pr-segs i.atual {
+    background: var(--pr-colete);
+}
+
+.pr-frac {
+    margin-top: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+/* O card do nível atual: única superfície tinta da tela, único círculo
+   lima. Não há como errar onde tocar. */
+.pr-atual {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "n p" "t p" "a p";
+    align-items: center;
+    column-gap: 16px;
+    width: 100%;
+    text-align: left;
+    border: 0;
+    background: var(--pr-tinta);
+    border-radius: var(--pr-r-card);
+    padding: 24px;
+    margin-top: 16px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform .12s ease;
+}
+
+.pr-atual:active {
+    transform: scale(.99);
+}
+
+.pr-atual-n {
+    grid-area: n;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    color: var(--pr-papel);
+}
+
+.pr-atual-t {
+    grid-area: t;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1.06;
+    letter-spacing: -.03em;
+    color: var(--pr-papel);
+    margin-top: 6px;
+}
+
+.pr-atual-a {
+    grid-area: a;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--pr-colete);
+    margin-top: 8px;
+}
+
+.pr-play {
+    grid-area: p;
+    width: 64px;
+    height: 64px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--pr-colete);
+    display: grid;
+    place-items: center;
+    animation: prPulso 2.8s ease-out 1.2s infinite;
+}
+
+.pr-play svg {
+    width: 24px;
+    height: 26px;
+    margin-left: 3px;
+    /* centragem óptica do triângulo */
+}
+
+/* =====================================================================
+   TELA — TRILHA
+   ===================================================================== */
+
+.pr-titulo {
+    font-size: clamp(36px, 11.8vw, 46px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.04em;
+    color: var(--pr-papel);
+    margin-top: 14px;
+}
+
+.pr-niveis {
     list-style: none;
-    margin: 0;
+    margin: 24px 0 0;
     padding: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
 }
 
-.nv {
+.pr-nv {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: var(--pr-papel);
+    border-radius: var(--pr-r-linha);
+    padding: 0 20px;
+    min-height: 78px;
+    width: 100%;
+    border: 0;
+    text-align: left;
+    font-family: inherit;
+    color: var(--pr-tinta);
+}
+
+.pr-nv em {
+    font-style: normal;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    flex: none;
+}
+
+.pr-nv > span {
+    flex: 1;
+    min-width: 0;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -.025em;
+}
+
+.pr-nv b {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    flex: none;
+}
+
+.pr-nv svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+
+.pr-nv.agora {
+    min-height: 88px;
+    cursor: pointer;
+    transition: transform .12s ease;
+}
+
+.pr-nv.agora:active {
+    transform: scale(.99);
+}
+
+.pr-nv.agora > span {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -.03em;
+}
+
+.pr-nv.agora .pr-play {
+    width: 52px;
+    height: 52px;
+}
+
+.pr-nv.agora .pr-play svg {
+    width: 19px;
+    height: 21px;
+}
+
+/* Bloqueado: superfície tinta e cadeado lima. O cadeado basta — nível
+   travado é argumento de venda, tem que parecer fechado de propósito e
+   não quebrado. */
+.pr-nv.travado {
+    background: var(--pr-tinta);
+    color: var(--pr-papel);
+}
+
+.pr-nv.travado svg {
+    width: 26px;
+    height: 26px;
+}
+
+/* =====================================================================
+   TELA — TURMA
+   ===================================================================== */
+
+.pr-cab {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.pr-cab .pr-titulo {
+    margin-top: 0;
+}
+
+.pr-tot {
+    font-size: clamp(36px, 11.8vw, 46px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.04em;
+    color: var(--pr-tinta);
+}
+
+.pr-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 9px;
+    margin-top: 22px;
+}
+
+.pr-kpi {
+    background: var(--pr-tinta);
+    border-radius: var(--pr-r-linha);
+    padding: 18px 14px;
+    min-height: 155px;
+    display: flex;
+    flex-direction: column;
+    color: var(--pr-papel);
+}
+
+.pr-kpi svg {
+    width: 26px;
+    height: 26px;
+    flex: none;
+}
+
+.pr-kpi b {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.04em;
+    margin-top: auto;
+}
+
+.pr-kpi span {
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 10px;
+}
+
+.pr-alunos {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 22px;
+    background: var(--pr-papel);
+    border-radius: var(--pr-r-card);
+    display: flex;
+    flex-direction: column;
+    gap: 26px;
+}
+
+.pr-al {
     display: flex;
     align-items: center;
     gap: 14px;
-    background: var(--pr-papel);
-    border-radius: var(--pr-r-linha);
-    padding: 0 18px;
-    min-height: 58px;
 }
 
-.nv em {
-    font-style: normal;
-    font-weight: 700;
-    font-size: 13px;
-    color: rgba(18, 18, 26, .34);
-    width: 22px;
+.pr-al > svg {
+    width: 38px;
+    height: 38px;
     flex: none;
 }
 
-.nv span {
+.pr-al span {
     flex: 1;
     min-width: 0;
+    font-size: 19px;
     font-weight: 700;
-    font-size: 18px;
     letter-spacing: -.02em;
 }
 
-.nv b {
-    flex: none;
-    font-weight: 700;
-    font-size: 14px;
-    background: rgba(18, 18, 26, .07);
-    border-radius: var(--pr-pill);
-    padding: 5px 11px;
-}
-
-/* Bloqueado: o cadeado basta. Sem listra de obra, sem toast explicando. */
-.nv.travado {
-    background: rgba(255, 255, 255, .4);
-}
-
-.nv.travado span,
-.nv.travado em {
-    color: rgba(18, 18, 26, .42);
-}
-
-.cadeado {
-    width: 19px;
-    height: 19px;
-    flex: none;
-    color: rgba(18, 18, 26, .4);
-}
-
-/* O único card tinta e o único objeto lima: não há como errar onde tocar. */
-.nv.agora {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas: "n p" "t p" "m p";
-    align-items: center;
-    column-gap: 16px;
-    background: var(--pr-tinta);
-    border-radius: var(--pr-r-card);
-    padding: 20px 20px 20px 22px;
-    min-height: 118px;
-}
-
-.nv.agora em {
-    grid-area: n;
-    width: auto;
-    font-size: 13px;
+.pr-al b {
+    font-size: 15px;
+    font-weight: 800;
     letter-spacing: .06em;
-    color: var(--pr-colete);
-}
-
-.nv.agora span {
-    grid-area: t;
-    font-size: 32px;
-    line-height: 1.08;
-    letter-spacing: -.035em;
-    color: #fff;
-}
-
-.nv.agora i {
-    grid-area: m;
-    font-style: normal;
-    font-size: 14px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, .55);
-}
-
-.play {
-    grid-area: p;
-    width: 70px;
-    height: 70px;
     flex: none;
-    border: 0;
+}
+
+.pr-al i {
+    width: 34px;
+    height: 34px;
+    flex: none;
     border-radius: 50%;
-    background: var(--pr-colete);
-    color: var(--pr-tinta);
+    background: var(--pr-tinta);
     display: grid;
     place-items: center;
+}
+
+.pr-al i svg {
+    width: 17px;
+    height: 17px;
+}
+
+/* Sem alerta, o lugar do disco fica vazio — mas a coluna tem que se
+   manter alinhada entre as linhas. */
+.pr-al i.vazio {
+    background: none;
+}
+
+/* =====================================================================
+   ABAS
+   ===================================================================== */
+
+.pr-abas {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 15;
+    display: flex;
+    gap: 6px;
+    padding: 10px 18px calc(10px + env(safe-area-inset-bottom));
+    background: var(--pr-violeta);
+    pointer-events: auto;
+}
+
+.pr-abas[hidden] {
+    display: none;
+}
+
+.pr-aba {
+    flex: 1;
+    min-height: 56px;
+    border: 0;
+    border-radius: var(--pr-pill);
+    background: var(--pr-papel);
+    color: var(--pr-tinta);
+    font-family: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
     cursor: pointer;
-    transition: transform .12s ease;
-    animation: prPulso 2.8s ease-out 1.2s infinite;
 }
 
-.play:active {
-    transform: scale(.94);
+.pr-aba svg {
+    width: 21px;
+    height: 21px;
 }
 
-.play svg {
-    width: 30px;
-    height: 30px;
-    margin-left: 3px;
-    /* centragem óptica do triângulo */
+.pr-aba span {
+    font-size: 12px;
+    font-weight: 700;
 }
 
-/* ---------- movimento: dois keyframes, e só ---------- */
-
-@keyframes prSobe {
-    from {
-        opacity: 0;
-        transform: translateY(16px) scale(.94);
-    }
-
-    to {
-        opacity: 1;
-        transform: none;
-    }
+/* O design exportado deixa as três abas idênticas — sem estado ativo o
+   usuário não sabe onde está. Tinta é a cor de contraste do sistema, e
+   resolve sem inventar cor nova. */
+.pr-aba.on {
+    background: var(--pr-tinta);
+    color: var(--pr-papel);
 }
 
 @keyframes prPulso {
-
-    0%,
-    72% {
-        box-shadow: 0 0 0 0 rgba(216, 255, 78, .55);
-    }
-
-    100% {
-        box-shadow: 0 0 0 16px rgba(216, 255, 78, 0);
-    }
+    0%, 72% { box-shadow: 0 0 0 0 rgba(216, 255, 78, .5); }
+    100%    { box-shadow: 0 0 0 15px rgba(216, 255, 78, 0); }
 }
 
-@media (prefers-reduced-motion:reduce) {
-
-    .avatar,
-    .play {
+@media (prefers-reduced-motion: reduce) {
+    .pr-play {
         animation: none;
     }
 }
 
-/* ---------- desktop: a folha vira painel flutuante sobre a cena ---------- */
+/* Enquanto o portal está aberto, a HUD do jogo não pode aparecer nem
+   capturar toque. */
+body:not(.em-jogo) .hud {
+    display: none;
+}
 
-@media (min-width:760px) {
-    .screen {
-        align-items: center;
-        justify-content: center;
+/* ---------- desktop ----------
+   O violeta continua sangrando a tela toda; só a coluna de conteúdo é
+   limitada. Tentei um "aparelho" flutuante centralizado e o custo era
+   posicionamento absoluto em cima de filhos em fluxo — quebra fácil e
+   não paga o que entrega. */
+
+@media (min-width: 760px) {
+    .pr-top,
+    .pr-corpo,
+    .pr-boas,
+    .pr-abas {
+        width: 100%;
+        max-width: 460px;
+        margin-left: auto;
+        margin-right: auto;
     }
 
-    .screen::before {
-        display: none;
-    }
-
-    .barra {
-        position: absolute;
-        top: 0;
+    .pr-abas {
         left: 0;
         right: 0;
     }
 
-    .folha {
-        margin: 0;
-        width: min(520px, 92vw);
-        border-radius: var(--pr-r-folha);
-        padding: 0 40px 40px;
-        box-shadow: 0 30px 80px rgba(10, 10, 22, .5);
-    }
-
-    #scr-boas .folha {
-        min-height: 0;
-    }
-
-    #scr-boas .acao {
-        margin-top: 36px;
-    }
-
-    #scr-painel .folha {
-        min-height: 0;
-        max-height: 88vh;
-    }
-}
-
-/* Celular baixo / paisagem: encolhe o avatar em vez de rolar. */
-@media (max-height:640px) and (max-width:759px) {
-    .avatar {
-        width: 104px;
-        height: 104px;
-        margin-top: -52px;
-        box-shadow: 0 0 0 7px var(--pr-violeta);
-    }
-
-    .saudacao {
-        margin-top: 22px;
-        font-size: clamp(32px, 9vw, 42px);
+    .pr-boas {
+        padding-bottom: 48px;
     }
 }
 

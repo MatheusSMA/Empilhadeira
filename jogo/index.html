@@ -34,116 +34,171 @@
     <div id="overlay">
 
 
+
         <!-- ================= PORTAL — PRUMO =================
-             Encena a plataforma que está sendo vendida, nunca o sistema de um
-             cliente real: sem marca, logotipo ou domínio de terceiro, e a pílula
-             "Demo" nas duas telas.
-             A folha sobe por baixo em vez de cobrir tudo com blur: a cena 3D do
-             galpão fica viva no topo e VIRA a imagem da tela, sem um <img>. -->
-        <section class="screen is-active" id="scr-boas">
-            <header class="barra">
-                <svg class="marca" viewBox="0 0 144 40" role="img" aria-label="Prumo">
-                    <rect x="14.6" y="1.5" width="3.2" height="9" rx="1.6" fill="currentColor" />
-                    <path d="M16.2 38.4C9.1 32.6 5 27.7 5 22.6A11.2 11.2 0 1 1 27.4 22.6C27.4 27.7 23.3 32.6 16.2 38.4Z"
-                        fill="currentColor" />
-                    <circle cx="16.2" cy="22.2" r="4.1" fill="#D8FF4E" />
-                    <text x="38" y="30.5" font-family="Outfit, system-ui, sans-serif" font-size="25" font-weight="800"
-                        letter-spacing="1.4" fill="currentColor">PRUMO</text>
-                </svg>
-                <span class="chip-demo">Demo</span>
+             Implementado a partir do design exportado do Claude Design, medindo
+             a árvore renderizada a 390×844: geometria, cores, pesos e
+             entreletras vieram do DOM, não de estimativa.
+             Encena a plataforma que está sendo vendida — sem marca, logotipo ou
+             domínio de empresa real. -->
+
+        <section class="screen pr" id="scr-boas">
+            <header class="pr-top">
+                <span class="pr-marca">
+                    <svg viewBox="0 0 20 26" aria-hidden="true" class="pr-mk">
+                        <path d="M10 0v13" stroke="currentColor" stroke-width="2.4" />
+                        <path d="M4 13h12l-6 11z" fill="currentColor" />
+                    </svg>
+                    <b>PRUMO</b>
+                </span>
             </header>
 
-            <div class="folha">
-                <div class="avatar">
-                    <svg viewBox="0 0 160 160" role="img" aria-label="Foto do operador">
-                        <circle cx="80" cy="80" r="80" fill="#D8FF4E" />
-                        <path d="M80 101c-28 0-48 19-52 59h104c-4-40-24-59-52-59z" fill="#12121A" />
-                        <path d="M57 110c5-3 10-5 16-6.4V160H52c0-25 1-41 5-50z" fill="#FFFFFF" />
-                        <path d="M103 110c-5-3-10-5-16-6.4V160h21c0-25-1-41-5-50z" fill="#FFFFFF" />
-                        <rect x="52" y="131" width="56" height="7" fill="#D8FF4E" opacity=".85" />
-                        <rect x="70" y="86" width="20" height="24" rx="10" fill="#F0C39C" />
-                        <circle cx="54" cy="74" r="5.5" fill="#F0C39C" />
-                        <circle cx="106" cy="74" r="5.5" fill="#F0C39C" />
-                        <ellipse cx="80" cy="72" rx="26" ry="28" fill="#F0C39C" />
-                        <path d="M50 58a30 30 0 0 1 60 0z" fill="#12121A" />
-                        <rect x="41" y="53" width="78" height="11" rx="5.5" fill="#12121A" />
-                        <rect x="76" y="31" width="8" height="24" rx="4" fill="#FFFFFF" />
-                        <circle cx="70" cy="76" r="3.2" fill="#12121A" />
-                        <circle cx="90" cy="76" r="3.2" fill="#12121A" />
-                        <path d="M72 88q8 7 16 0" stroke="#12121A" stroke-width="3.2" fill="none"
-                            stroke-linecap="round" />
+            <div class="pr-boas">
+                <div class="pr-avatar-g">
+                    <svg viewBox="0 0 96 96" aria-hidden="true">
+                        <circle cx="48" cy="48" r="48" fill="#12121A" />
+                        <path d="M14 96c0-19 15-31 34-31s34 12 34 31z" fill="#7A7BF5" />
+                        <circle cx="48" cy="47" r="17" fill="#7A7BF5" />
+                        <path d="M27 41a21 21 0 0 1 42 0z" fill="#FFFFFF" />
+                        <rect x="22" y="39" width="52" height="6.5" rx="3.25" fill="#FFFFFF" />
                     </svg>
                 </div>
 
-                <h1 class="saudacao">Bem-vindo<br>de volta,<br><b id="chNome">Marcos</b></h1>
+                <p class="pr-ola">Bem-vindo de volta,</p>
+                <h1 class="pr-nome" id="chNome">Rafael</h1>
 
-                <button class="acao" id="btEntrar" type="button">
-                    Entrar
-                    <i><svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 12h13M12 6.5l6 5.5-6 5.5" />
-                        </svg></i>
+                <button class="pr-cta" id="btEntrar" type="button">
+                    Continuar
+                    <svg viewBox="0 0 24 24" aria-hidden="true" class="pr-seta">
+                        <path d="M4 12h13M12 5.5l6.5 6.5-6.5 6.5" fill="none" stroke="currentColor"
+                            stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
                 </button>
-                <button class="ligacao" id="btTrocar" type="button">Trocar conta</button>
             </div>
         </section>
 
-        <section class="screen" id="scr-painel">
-            <header class="barra">
-                <svg class="marca" viewBox="0 0 144 40" role="img" aria-label="Prumo">
-                    <rect x="14.6" y="1.5" width="3.2" height="9" rx="1.6" fill="currentColor" />
-                    <path d="M16.2 38.4C9.1 32.6 5 27.7 5 22.6A11.2 11.2 0 1 1 27.4 22.6C27.4 27.7 23.3 32.6 16.2 38.4Z"
-                        fill="currentColor" />
-                    <circle cx="16.2" cy="22.2" r="4.1" fill="#D8FF4E" />
-                    <text x="38" y="30.5" font-family="Outfit, system-ui, sans-serif" font-size="25" font-weight="800"
-                        letter-spacing="1.4" fill="currentColor">PRUMO</text>
-                </svg>
-                <span class="chip-demo">Demo</span>
-                <button class="eu" id="btSair" type="button" aria-label="Sair">
-                    <svg viewBox="0 0 100 100" aria-hidden="true">
-                        <circle cx="50" cy="50" r="50" fill="#D8FF4E" />
-                        <path d="M50 61c-19 0-33 13-36 39h72c-3-26-17-39-36-39z" fill="#12121A" />
-                        <path d="M35 67c3-2 6-3.5 10-4.2V100H33c0-16 .7-27 2-33z" fill="#FFFFFF" />
-                        <path d="M65 67c-3-2-6-3.5-10-4.2V100h12c0-16-.7-27-2-33z" fill="#FFFFFF" />
-                        <ellipse cx="50" cy="52" rx="20" ry="21" fill="#F0C39C" />
-                        <path d="M27 42a23 23 0 0 1 46 0z" fill="#12121A" />
-                        <rect x="20" y="38" width="60" height="9" rx="4.5" fill="#12121A" />
-                        <rect x="47" y="23" width="6" height="17" rx="3" fill="#FFFFFF" />
+        <section class="screen pr" id="scr-inicio">
+            <header class="pr-top pr-top-sm">
+                <span class="pr-marca pr-marca-sm">
+                    <svg viewBox="0 0 20 26" aria-hidden="true" class="pr-mk">
+                        <path d="M10 0v13" stroke="currentColor" stroke-width="2.4" />
+                        <path d="M4 13h12l-6 11z" fill="currentColor" />
+                    </svg>
+                    <b>PRUMO</b>
+                </span>
+                <button class="pr-eu" id="btSair" type="button" aria-label="Sair">
+                    <svg viewBox="0 0 96 96" aria-hidden="true">
+                        <circle cx="48" cy="48" r="48" fill="#12121A" />
+                        <path d="M14 96c0-19 15-31 34-31s34 12 34 31z" fill="#7A7BF5" />
+                        <circle cx="48" cy="47" r="17" fill="#7A7BF5" />
+                        <path d="M27 41a21 21 0 0 1 42 0z" fill="#FFFFFF" />
+                        <rect x="22" y="39" width="52" height="6.5" rx="3.25" fill="#FFFFFF" />
                     </svg>
                 </button>
             </header>
 
-            <div class="folha">
-                <div class="trilho">
-                    <div>
-                        <h1>Empilhadeira</h1>
-                        <span class="norma">NR-11</span>
-                    </div>
-                    <div class="passo" aria-label="4 de 6 níveis"><b>4</b><i>/6</i></div>
+            <div class="pr-corpo">
+                <div class="pr-curso">
+                    <span class="pr-norma">NR-11</span>
+                    <h1>Empilhadeira</h1>
+                    <svg class="pr-emp" viewBox="0 0 48 48" aria-hidden="true">
+                        <path d="M6 34h20V16h9l6 10v8" stroke="#12121A" stroke-width="3" fill="none"
+                            stroke-linejoin="round" />
+                        <path d="M30 34V10h3" stroke="#12121A" stroke-width="3" fill="none" />
+                        <path d="M30 24h10" stroke="#12121A" stroke-width="3" />
+                        <circle cx="12" cy="39" r="4" fill="#12121A" />
+                        <circle cx="28" cy="39" r="4" fill="#12121A" />
+                    </svg>
+                    <div class="pr-segs" id="segs"></div>
+                    <div class="pr-frac"><span id="fracN">4</span>/6</div>
                 </div>
 
-                <ol class="niveis" id="lista">
-                    <li class="nv feito"><em>01</em><span>A máquina</span><b>92</b></li>
-                    <li class="nv feito"><em>02</em><span>Estabilidade</span><b>84</b></li>
-                    <li class="nv feito"><em>03</em><span>Inspeção</span><b>88</b></li>
-                    <li class="nv feito"><em>04</em><span>Manobra</span><b>79</b></li>
-                    <li class="nv agora">
-                        <em>05</em><span>Carga</span><i>40 min</i>
-                        <button class="play" id="btIniciar" type="button" aria-label="Iniciar nível 5: Carga">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M8 5.2v13.6L19 12z" fill="currentColor" />
-                            </svg>
-                        </button>
-                    </li>
-                    <li class="nv travado"><em>06</em><span>Avaliação</span>
-                        <svg class="cadeado" viewBox="0 0 24 24" role="img" aria-label="Bloqueado">
-                            <rect x="4" y="10" width="16" height="11" rx="3.5" fill="currentColor" />
-                            <path d="M8 10V7.5a4 4 0 0 1 8 0V10" fill="none" stroke="currentColor" stroke-width="2.4"
-                                stroke-linecap="round" />
+                <button class="pr-atual" id="btAtual" type="button">
+                    <span class="pr-atual-n">05</span>
+                    <span class="pr-atual-t">Carga</span>
+                    <span class="pr-atual-a">Entrar</span>
+                    <span class="pr-play">
+                        <svg viewBox="0 0 24 26" aria-hidden="true">
+                            <path d="M4 3l17 10L4 23z" fill="#12121A" />
                         </svg>
-                    </li>
-                </ol>
+                    </span>
+                </button>
             </div>
         </section>
+
+        <section class="screen pr" id="scr-trilha">
+            <div class="pr-corpo pr-corpo-topo">
+                <span class="pr-norma">NR-11</span>
+                <h1 class="pr-titulo">Trilha</h1>
+                <ol class="pr-niveis" id="lista"></ol>
+            </div>
+        </section>
+
+        <section class="screen pr" id="scr-turma">
+            <div class="pr-corpo pr-corpo-topo">
+                <div class="pr-cab">
+                    <h1 class="pr-titulo">Turma</h1>
+                    <span class="pr-tot">24</span>
+                </div>
+
+                <div class="pr-kpis">
+                    <div class="pr-kpi">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 3l9.5 17H2.5z" fill="#FFFFFF" />
+                            <path d="M12 9v5.4" stroke="#12121A" stroke-width="2.2" stroke-linecap="round" />
+                            <circle cx="12" cy="17.4" r="1.3" fill="#12121A" />
+                        </svg>
+                        <b>18</b><span>Colisões</span>
+                    </div>
+                    <div class="pr-kpi">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M5 21V4" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" />
+                            <path d="M5 7h9" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" />
+                            <path d="M11 7l-3-3M11 7l-3 3" stroke="#FFFFFF" stroke-width="2.4" fill="none"
+                                stroke-linecap="round" />
+                            <path d="M16 21V13h5v8z" fill="#FFFFFF" />
+                        </svg>
+                        <b>31</b><span>Garfo alto</span>
+                    </div>
+                    <div class="pr-kpi">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M12 2l2.4 5.6L20 6l-1.6 5.6L22 14l-5.4 1.4L18 21l-5.2-2.6L9 22l-.6-5.6L3 15l3.6-3L4 7l5.6 1z"
+                                fill="#D8FF4E" />
+                        </svg>
+                        <b>7</b><span>Quase-acidentes</span>
+                    </div>
+                </div>
+
+                <ul class="pr-alunos" id="alunos"></ul>
+            </div>
+        </section>
+
+        <nav class="pr-abas" id="abas" hidden>
+            <button class="pr-aba" data-aba="inicio" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 11l8-7 8 7v9H4z" fill="currentColor" />
+                </svg>
+                <span>Início</span>
+            </button>
+            <button class="pr-aba" data-aba="trilha" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="6" cy="7" r="3" fill="currentColor" />
+                    <circle cx="12" cy="12" r="3" fill="currentColor" />
+                    <circle cx="18" cy="17" r="3" fill="currentColor" />
+                    <path d="M6 7h6v10h6" stroke="currentColor" stroke-width="2" fill="none" />
+                </svg>
+                <span>Trilha</span>
+            </button>
+            <button class="pr-aba" data-aba="turma" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="9" cy="8" r="3.4" fill="currentColor" />
+                    <path d="M2.5 20c0-3.6 2.9-6.2 6.5-6.2s6.5 2.6 6.5 6.2z" fill="currentColor" />
+                    <circle cx="17.5" cy="9" r="2.6" fill="currentColor" />
+                    <path d="M15 20c0-3 1.4-5 3.4-5 1.9 0 3.1 1.7 3.1 5z" fill="currentColor" />
+                </svg>
+                <span>Turma</span>
+            </button>
+        </nav>
 
         <div class="hud">
             <div class="readout">
