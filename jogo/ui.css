@@ -2023,6 +2023,8 @@ body.portrait .deck {
     --mv-tela:  240ms;   /* tela que entra */
     --mv-mundo: 420ms;   /* portal <-> cabine */
     --mv-passo: 36ms;    /* escalonamento */
+    --mv-empurra: 300ms; /* deslizamento de tela */
+    --mv-desliza: cubic-bezier(.32, .72, 0, 1);   /* curva de empurrão */
 }
 
 /* ---------- a placa: o violeta que nunca pisca ----------
@@ -2051,89 +2053,91 @@ html.direto #pr-plate { animation: none; opacity: 0; }
 @keyframes mvPlacaEntra { from { opacity: 0 } to { opacity: 1 } }
 @keyframes mvPlacaSai   { from { opacity: 1 } to { opacity: 0 } }
 
-/* ---------- troca de tela ----------
-   Z = mudou de profundidade (Continuar, Sair, entrar no simulador).
-   X = irmãs (as três abas). */
+/* ---------- troca de tela: EMPURRÃO, não fade ----------
+   A versão anterior desvanecia a tela inteira (opacidade 0→1 no container).
+   Fade de tela cheia é exatamente o que o olho lê como "página recarregando":
+   por um instante não existe conteúdo nenhum, e o cérebro conclui atualização.
+   Aqui nada muda de opacidade. As duas telas deslizam juntas, na mesma direção
+   e no mesmo tempo — uma empurra a outra. Como o violeta vem da placa por
+   baixo, o fundo é constante e não há como piscar.
 
-.screen.pr.is-active {
+   Eixos: X entre telas irmãs (as três abas) · Y quando muda de profundidade,
+   e aí o conteúdo novo sobe de baixo. */
+
+.screen.pr.is-active,
+.screen.pr.is-leaving {
     display: flex;
-    animation-duration: var(--mv-tela);
-    animation-timing-function: var(--mv-entra);
-    animation-fill-mode: backwards;   /* NUNCA both: brigaria com o :active */
+    animation-duration: var(--mv-empurra);
+    animation-timing-function: var(--mv-desliza);
+    animation-fill-mode: both;
+    will-change: transform;
 }
 
 .screen.pr.is-leaving {
-    display: flex;
     pointer-events: none;
-    animation-duration: var(--mv-saida);
-    animation-timing-function: var(--mv-sai);
-    animation-fill-mode: both;
 }
 
-.v-dir.is-active     { --mv-dx:  26px; animation-name: mvTelaEntraX }
-.v-dir.is-leaving    { --mv-dx: -18px; animation-name: mvTelaSaiX }
-.v-esq.is-active     { --mv-dx: -26px; animation-name: mvTelaEntraX }
-.v-esq.is-leaving    { --mv-dx:  18px; animation-name: mvTelaSaiX }
+/* irmãs: entra de um lado, a que sai vai para o outro */
+.v-dir.is-active     { --mv-de:  100%; --mv-para: 0; animation-name: mvEntraX }
+.v-dir.is-leaving    { --mv-de: 0; --mv-para: -100%; animation-name: mvSaiX }
+.v-esq.is-active     { --mv-de: -100%; --mv-para: 0; animation-name: mvEntraX }
+.v-esq.is-leaving    { --mv-de: 0; --mv-para:  100%; animation-name: mvSaiX }
 
-.v-frente.is-active  { --mv-sc: .955; animation-name: mvTelaEntraZ }
-.v-frente.is-leaving { --mv-sc: 1.05; animation-name: mvTelaSaiZ }
-.v-tras.is-active    { --mv-sc: 1.04; animation-name: mvTelaEntraZ }
-.v-tras.is-leaving   { --mv-sc: .96;  animation-name: mvTelaSaiZ }
+/* profundidade: o novo sobe de baixo, o velho sai por cima */
+.v-frente.is-active  { --mv-de:  100%; --mv-para: 0; animation-name: mvEntraY }
+.v-frente.is-leaving { --mv-de: 0; --mv-para:  -34%; animation-name: mvSaiY }
+.v-tras.is-active    { --mv-de:  -34%; --mv-para: 0; animation-name: mvEntraY }
+.v-tras.is-leaving   { --mv-de: 0; --mv-para:  100%; animation-name: mvSaiY }
 
-/* entrar no simulador: mesma gramática do "Continuar", só que mais longe */
-.v-mundo.is-leaving  { --mv-sc: 1.12; animation-name: mvTelaSaiZ; animation-duration: 300ms }
+/* a que fica parada atrás anda menos (34%): é o que dá camada em vez de
+   duas folhas correndo lado a lado */
 
-@keyframes mvTelaEntraX {
-    from { opacity: 0; transform: translate3d(var(--mv-dx), 0, 0) }
-    to   { opacity: 1; transform: none }
+/* entrar no simulador: o portal sai por cima e a placa dissolve atrás */
+.v-mundo.is-leaving  { --mv-de: 0; --mv-para: -100%; animation-name: mvSaiY }
+
+/* Entrada e saída PRECISAM de nomes diferentes. Com o mesmo nome, trocar só as
+   custom properties não reinicia a animação: a tela que sai mantinha a
+   animação de entrada já concluída e ficava parada no lugar. */
+@keyframes mvEntraX {
+    from { transform: translate3d(var(--mv-de), 0, 0) }
+    to   { transform: translate3d(var(--mv-para), 0, 0) }
 }
-@keyframes mvTelaSaiX {
-    0%   { opacity: 1; transform: none }
-    45%  { opacity: 0 }                       /* mata o texto duplo cedo */
-    100% { opacity: 0; transform: translate3d(var(--mv-dx), 0, 0) }
+@keyframes mvSaiX {
+    from { transform: translate3d(var(--mv-de), 0, 0) }
+    to   { transform: translate3d(var(--mv-para), 0, 0) }
 }
-@keyframes mvTelaEntraZ {
-    from { opacity: 0; transform: scale(var(--mv-sc)) }
-    to   { opacity: 1; transform: none }
+@keyframes mvEntraY {
+    from { transform: translate3d(0, var(--mv-de), 0) }
+    to   { transform: translate3d(0, var(--mv-para), 0) }
 }
-@keyframes mvTelaSaiZ {
-    0%   { opacity: 1; transform: none }
-    45%  { opacity: 0 }
-    100% { opacity: 0; transform: scale(var(--mv-sc)) }
+@keyframes mvSaiY {
+    from { transform: translate3d(0, var(--mv-de), 0) }
+    to   { transform: translate3d(0, var(--mv-para), 0) }
 }
 
-/* ---------- conteúdo escalonado ----------
-   Uma camada animada por subárvore. .pr-curso anima, os filhos dela não. */
+/* ---------- conteúdo ----------
+   O escalonamento por elemento saiu. Com a tela inteira deslizando, animar
+   cada bloco por dentro é um segundo movimento com timing diferente — é a
+   outra metade da sensação de "tela sendo remontada". Uma coisa se move: a
+   tela. Só a primeira aparição do portal escalona, porque ali não há
+   deslizamento nenhum para competir. */
 
-.screen.pr.is-active .pr-avatar-g,
-.screen.pr.is-active .pr-ola,
-.screen.pr.is-active .pr-nome,
-.screen.pr.is-active .pr-cta,
-.screen.pr.is-active .pr-curso,
-.screen.pr.is-active .pr-atual,
-.screen.pr.is-active .pr-corpo-topo > .pr-norma,
-#scr-trilha.is-active .pr-titulo,
-.screen.pr.is-active .pr-cab,
-.screen.pr.is-active .pr-kpi,
-.screen.pr.is-active .pr-alunos,
-.screen.pr.is-active .pr-nv {
-    animation: mvSobe 220ms var(--mv-entra) backwards;
-    animation-delay: calc(60ms + var(--i, 0) * var(--mv-passo));
+html.primeira #scr-boas.is-active .pr-avatar-g,
+html.primeira #scr-boas.is-active .pr-ola,
+html.primeira #scr-boas.is-active .pr-nome,
+html.primeira #scr-boas.is-active .pr-cta {
+    animation: mvSobe 260ms var(--mv-entra) backwards;
+    animation-delay: calc(80ms + var(--i, 0) * 60ms);
 }
 
 @keyframes mvSobe {
-    from { opacity: 0; transform: translate3d(0, 10px, 0) }
+    from { opacity: 0; transform: translate3d(0, 14px, 0) }
     to   { opacity: 1; transform: none }
 }
 
-#scr-boas.is-active .pr-ola,
-#scr-boas.is-active .pr-nome   { --i: 1 }
-#scr-boas.is-active .pr-cta    { --i: 2 }     /* a ação chega por último */
-#scr-inicio.is-active .pr-atual { --i: 1.6 }
-#scr-turma.is-active .pr-kpi:nth-child(2) { --i: 1 }
-#scr-turma.is-active .pr-kpi:nth-child(3) { --i: 2 }
-#scr-turma.is-active .pr-alunos { --i: 3 }
-/* .pr-nv recebe --i do JS (ver bloco no fim) */
+html.primeira #scr-boas.is-active .pr-ola  { --i: 1 }
+html.primeira #scr-boas.is-active .pr-nome { --i: 1 }
+html.primeira #scr-boas.is-active .pr-cta  { --i: 2 }
 
 /* ---------- barra de abas ----------
    Entra sozinha: hidden -> flex reinicia a animação. Só entre boas/sim e
@@ -2252,15 +2256,16 @@ body.em-jogo .keyhints { animation: mvHudY 200ms 420ms var(--mv-entra) backwards
 @media (prefers-reduced-motion: reduce) {
     :root {
         --mv-tela: 130ms;
+        --mv-empurra: 140ms;
         --mv-saida: 110ms;
         --mv-mundo: 220ms;
         --mv-passo: 0ms;
     }
 
-    @keyframes mvTelaEntraX { from { opacity: 0 } to { opacity: 1 } }
-    @keyframes mvTelaEntraZ { from { opacity: 0 } to { opacity: 1 } }
-    @keyframes mvTelaSaiX   { from { opacity: 1 } to { opacity: 0 } }
-    @keyframes mvTelaSaiZ   { from { opacity: 1 } to { opacity: 0 } }
+    @keyframes mvEntraX { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvEntraY { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvSaiX   { from { opacity: 1 } to { opacity: 0 } }
+    @keyframes mvSaiY   { from { opacity: 1 } to { opacity: 0 } }
     @keyframes mvSobe       { from { opacity: 0 } to { opacity: 1 } }
     @keyframes mvHudX       { from { opacity: 0 } to { opacity: 1 } }
     @keyframes mvHudY       { from { opacity: 0 } to { opacity: 1 } }

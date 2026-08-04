@@ -51,6 +51,103 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         guias.push(m);
     }
 
+    /* ---------- pista de aproximação ----------
+       As guias acima dizem PARA ONDE eu aponto. Esta diz ONDE eu deveria
+       estar: é o eixo de entrada do alvo, desenhado no chão, saindo da face
+       dele na direção de quem chega. Alinhar as duas coisas é o ajuste fino.
+       Só aparece perto (a partir de 6 m), senão vira poluição.
+
+       Base escura obrigatória: a lima tem 1,12:1 de contraste contra o
+       concreto do piso — sozinha ela some. Escuro dá a silhueta, a lima dá o
+       estado. Mesma regra da HUD. */
+    const PISTA = { LEN: 3.6, LARG: 0.92, BITOLA: 0.30, PERTO: 6.0, TRAVA: 3.6 };
+
+    function criarPista() {
+        const g = new THREE.Group();
+
+        const base = new THREE.Mesh(
+            new THREE.PlaneGeometry(PISTA.LARG, PISTA.LEN),
+            new THREE.MeshBasicMaterial({
+                color: COLOR.ink, transparent: true, opacity: 0.34, depthWrite: false,
+            })
+        );
+        base.rotation.x = -Math.PI / 2;
+        base.position.set(0, 0.018, PISTA.LEN / 2 + 0.5);
+        base.renderOrder = 2;
+        g.add(base);
+
+        const matTrilho = new THREE.MeshBasicMaterial({
+            color: COLOR.hazard, transparent: true, opacity: 0.9, depthWrite: false,
+        });
+        const trilhos = [];
+        for (const sx of [-PISTA.BITOLA, PISTA.BITOLA]) {
+            const t = new THREE.Mesh(new THREE.PlaneGeometry(0.055, PISTA.LEN), matTrilho);
+            t.rotation.x = -Math.PI / 2;
+            t.position.set(sx, 0.026, PISTA.LEN / 2 + 0.5);
+            t.renderOrder = 4;
+            g.add(t);
+            trilhos.push(t);
+        }
+
+        // travessas: dão noção de distância que uma linha lisa não dá
+        const travessas = [];
+        for (let i = 1; i <= 4; i++) {
+            const t = new THREE.Mesh(
+                new THREE.PlaneGeometry(PISTA.BITOLA * 2, 0.045), matTrilho.clone());
+            t.rotation.x = -Math.PI / 2;
+            t.position.set(0, 0.024, 0.5 + i * (PISTA.LEN / 4.6));
+            t.renderOrder = 3;
+            t.material.opacity = 0.5;
+            g.add(t);
+            travessas.push(t);
+        }
+
+        g.visible = false;
+        scene.add(g);
+        return { grupo: g, base, trilhos, travessas, mat: matTrilho };
+    }
+
+    const pista = criarPista();
+    const _pv = new THREE.Vector3();
+
+    /** Posiciona a pista no alvo, virada para quem chega, e colore pelo quanto
+     *  a máquina já está no eixo. Devolve o desvio para a HUD. */
+    function atualizaPista(alvo, st, simetrico) {
+        if (!alvo) { pista.grupo.visible = false; return null; }
+
+        const dx = st.x - alvo.x, dz = st.z - alvo.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist > PISTA.PERTO) { pista.grupo.visible = false; return null; }
+
+        // Palete tem simetria de 180°: a pista nasce do lado por onde se chega.
+        let yaw = alvo.yaw || 0;
+        if (simetrico && (Math.sin(yaw) * dx + Math.cos(yaw) * dz) < 0) yaw += Math.PI;
+
+        pista.grupo.position.set(alvo.x, 0, alvo.z);
+        pista.grupo.rotation.y = yaw;
+        pista.grupo.visible = true;
+
+        // desvio lateral em relação ao eixo da pista, e erro de rumo
+        const lateral = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
+        let rumoErr = st.yaw - (yaw + Math.PI);
+        rumoErr = Math.abs(Math.atan2(Math.sin(rumoErr), Math.cos(rumoErr)));
+
+        const noEixo = Math.abs(lateral) < 0.34 && rumoErr < D2R(16);
+        const fade = THREE.MathUtils.clamp((PISTA.PERTO - dist) / (PISTA.PERTO - PISTA.TRAVA), 0, 1);
+
+        pista.base.material.opacity = 0.34 * fade;
+        const cor = noEixo ? COLOR.deep : COLOR.hazard;
+        for (const t of pista.trilhos) {
+            t.material.color.setHex(cor);
+            t.material.opacity = (noEixo ? 1 : 0.85) * fade;
+        }
+        for (const t of pista.travessas) {
+            t.material.color.setHex(cor);
+            t.material.opacity = 0.5 * fade;
+        }
+        return { lateral, rumoErr, dist, noEixo };
+    }
+
     const mk = hud.addMarker({ label: 'PALETE', sub: 'SKU 4412', kind: 'alvo' });
 
     const S = {
@@ -66,6 +163,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         riscoFrio: 0,
         picoALat: 0,
         pallet: null,
+        pista: null,
     };
 
     function begin() {
@@ -84,6 +182,8 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         S.emRisco = false;
         S.riscoFrio = 0;
         S.picoALat = 0;
+        S.pista = null;
+        pista.grupo.visible = false;
         hud.setMarker(mk, {
             pos: new THREE.Vector3(PALETE.x, 0.9, PALETE.z),
             label: 'PALETE', sub: PALETE.label, kind: 'alvo', visible: true,
@@ -174,6 +274,15 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         const cand = pr.ok ? pr : null;
         atualizaGuias(cand, st);
 
+        // A pista nasce no alvo da vez: o palete enquanto se busca, a vaga
+        // depois de engatar. O palete tem simetria de 180°, a vaga não.
+        const alvoPista = S.fase === 'buscar'
+            ? (S.pallet && !S.pallet.userData.engaged
+                ? { x: S.pallet.position.x, z: S.pallet.position.z, yaw: S.pallet.rotation.y }
+                : null)
+            : S.fase === 'transportar' ? VAGA : null;
+        S.pista = atualizaPista(alvoPista, st, S.fase === 'buscar');
+
         /* ---------- engate AUTOMÁTICO no instante do encaixe ----------
            Era: alinhar E segurar o ▲ dentro de uma janela estreita de
            profundidade. Não funciona — o palete não tem colisor, então na prática
@@ -214,6 +323,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             if (r && r.slot) {
                 S.deposito = r;
                 S.fase = 'concluido';
+                pista.grupo.visible = false;
                 haptics.toca("deposito");
                 hud.setMarker(mk, { visible: false });
                 hud.say('DEPOSITADO — MISSÃO CONCLUÍDA', 'ok', 4);
@@ -234,16 +344,29 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
                 chip('NA VAGA — ABAIXE O GARFO ▼ PARA SOLTAR', 'ok');
             } else if (st.forkY > 0.6 && Math.abs(st.v) > 0.5) {
                 chip('GARFO ALTO — ABAIXE PARA TRAFEGAR', 'warn');
-            } else {
-                const perto = Math.hypot(VAGA.x - st.x, VAGA.z - st.z) < 4.0;
+            } else if (S.pista && !S.pista.noEixo) {
+                // Entregar não tinha dica de alinhamento — só de altura. A pista
+                // dá o desvio, então dá para dizer o que corrigir.
+                chip(Math.abs(S.pista.lateral) > 0.34
+                    ? `ENTRE NA PISTA — DESVIE PARA A ${S.pista.lateral > 0 ? 'DIREITA' : 'ESQUERDA'}`
+                    : 'ENDIREITE A MÁQUINA COM A PISTA', 'warn');
+            } else if (S.pista) {
                 const dz = VAGA.y - st.forkY;
-                chip(perto
-                    ? `VAGA: ALVO ${n2(VAGA.y)} m · FALTAM ${n2(Math.abs(dz))} m ${dz > 0 ? '▲' : '▼'}`
-                    : 'CARGA A BORDO · LIMITE 6 KM/H · NR-11', 'info');
+                chip(Math.abs(dz) > 0.16
+                    ? `NA PISTA · GARFO ${dz > 0 ? '▲' : '▼'} FALTAM ${n2(Math.abs(dz))} m`
+                    : 'NA PISTA · ALTURA OK — AVANCE', 'ok');
+            } else {
+                chip('CARGA A BORDO · LIMITE 6 KM/H · NR-11', 'info');
             }
         } else {
             // fase de busca: a ordem das mensagens é a ordem de correção
             const lado = pr.latSign > 0 ? 'ESQUERDA' : 'DIREITA';
+            // Já no eixo da pista, só falta chegar: reconhecer isso é o que
+            // transforma "aproxime-se" em confirmação de que o ajuste deu certo.
+            if (pr.falha === 'longe' && S.pista?.noEixo) {
+                chip('NA PISTA · SIGA EM FRENTE', 'ok');
+                return;
+            }
             const msg = {
                 nenhum: ['PALETE JÁ RECOLHIDO', 'ok'],
                 longe: ['APROXIME-SE DO PALETE PELA FRENTE', 'info'],

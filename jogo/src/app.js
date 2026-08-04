@@ -262,6 +262,11 @@ export function createApp({ onStart, onExit }) {
         get operador() { return operador; },
         voltarAoPortal,
         iniciar() {
+            // Só a PRIMEIRA aparição escalona por elemento: ali não há
+            // deslizamento de tela competindo. Nas trocas seguintes, quem se
+            // move é a tela inteira e mais nada.
+            document.documentElement.classList.add('primeira');
+            setTimeout(() => document.documentElement.classList.remove('primeira'), 1200);
             pintar();
             montarSegs();
             montarTrilha();
