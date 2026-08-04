@@ -741,22 +741,38 @@ body.pr-abas .pr-corpo {
    TELA — BEM-VINDO DE VOLTA
    ===================================================================== */
 
+/* Bloco único centrado nos dois eixos. A versão anterior seguia o design ao
+   pé da letra — tudo alinhado à esquerda e o botão colado embaixo — e ficava
+   torto: avatar, saudação e nome em x=28, mas o avatar 7px fora do prumo dos
+   outros dois. Centrado, o vazio acima e abaixo é simétrico e a composição
+   lê como decisão em vez de sobra. */
 .pr-boas {
     flex: 1;
     min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     padding: 0 28px calc(28px + env(safe-area-inset-bottom));
 }
 
-/* margin-top:auto acima do avatar e nada abaixo do nome: todo o vazio da
-   tela se acumula ANTES do bloco, e o botão fica no fim, óbvio. */
+/* A marca sai do fluxo: em coluna, ela empurrava o bloco ~37px abaixo do
+   centro real da tela — perto o bastante para parecer desalinhado e longe
+   o bastante para incomodar. */
+#scr-boas .pr-top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+}
+
 .pr-avatar-g {
-    margin-top: auto;
-    width: 83px;
-    height: 83px;
-    margin-bottom: 24px;
-    margin-left: 7px;
+    width: 96px;
+    height: 96px;
+    margin-bottom: 26px;
 }
 
 .pr-avatar-g svg {
@@ -775,10 +791,11 @@ body.pr-abas .pr-corpo {
 .pr-nome {
     font-size: clamp(40px, 13.3vw, 52px);
     font-weight: 800;
-    line-height: 1.27;
+    line-height: 1.12;
     letter-spacing: -.035em;
     color: var(--pr-papel);
-    margin-bottom: 18px;
+    margin-top: 2px;
+    margin-bottom: 34px;
     /* body tem user-select:none; o nome é editável ao trocar de operador */
     -webkit-user-select: text;
     user-select: text;
@@ -791,7 +808,6 @@ body.pr-abas .pr-corpo {
 }
 
 .pr-cta {
-    margin-top: auto;
     display: flex;
     align-items: center;
     justify-content: center;
