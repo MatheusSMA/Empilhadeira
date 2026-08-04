@@ -14,7 +14,10 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="./ui.css">
+    <!-- O Pages manda Cache-Control: max-age=600, então o navegador segura o
+         CSS antigo por até 10 minutos e a correção parece não ter subido.
+         Bumpar este número a cada mudança de estilo resolve na hora. -->
+    <link rel="stylesheet" href="./ui.css?v=9">
 
     <!-- Three.js vendorizado no repo: rede de reunião corporativa não derruba a demo.
          Trocar por CDN = mudar só este valor. -->
