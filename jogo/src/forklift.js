@@ -20,11 +20,15 @@ export const K = {
     // vende continua, some só o pedaço que embrulha o estômago em 1ª pessoa.
     OMEGA_MAX: 1.25,
     STEER_FALLOFF: 0.72,        // quanto o esterço fecha com a velocidade — ver nota em step()
-    VMAX: 3.0,                  // m/s vazio
-    VMAX_LOAD: 2.2,             // m/s com carga
-    VREV: -1.4,
-    ACCEL: 2.6,
-    BRAKE: 5.0,
+    // 2,2 m/s = 7,9 km/h vazio. Antes eram 3,0 (10,8 km/h) e em primeira pessoa
+    // isso fica rápido demais: o jogador chega no palete antes de ler a cena.
+    // Operação real de CD anda nessa faixa mesmo. Baixar a velocidade também
+    // derruba ω e aLat, então some junto o resto do enjoo de curva.
+    VMAX: 2.2,                  // m/s vazio
+    VMAX_LOAD: 1.6,             // m/s com carga
+    VREV: -1.0,
+    ACCEL: 2.0,
+    BRAKE: 4.2,
     DRAG: 0.8,
     FORK_MIN: 0.05,             // = altura da barra do garfo no mundo (ver mastPivot)
     FORK_MAX: 3.20,
@@ -32,11 +36,12 @@ export const K = {
     TILT_MIN: THREE.MathUtils.degToRad(-3),
     TILT_MAX: THREE.MathUtils.degToRad(8),
     TILT_SPEED: THREE.MathUtils.degToRad(9),
-    // Limiares de quase-acidente (m/s²). Calibrados contra o pico REAL alcançável
-    // pela curva de esterço acima (2,9 vazio · 1,5 com carga) — um limiar acima do
-    // pico nunca dispara e o contador de telemetria morre em silêncio.
-    ALAT_WARN: 2.6,
-    ALAT_WARN_LOAD: 1.3,
+    // Limiares de quase-acidente (m/s²). RECALIBRAR SEMPRE que VMAX mudar: são
+    // uma fração do pico alcançável pela curva de esterço, e um limiar acima do
+    // pico nunca dispara — o contador morre em silêncio e ninguém percebe.
+    // Com VMAX 2,2 / 1,6 o pico medido é 1,57 vazio e 0,83 com carga.
+    ALAT_WARN: 1.35,
+    ALAT_WARN_LOAD: 0.70,
 };
 
 /* Fonte única da calibração da cabine. A câmera em 1ª pessoa deriva o pitch

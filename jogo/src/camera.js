@@ -85,11 +85,12 @@ export function createCameraRig(aspect) {
         const step = (want - S.pitchDown) * expK(6, dt);
         S.pitchDown += clamp(step, -rate, rate);
 
-        // olhar automático por cima do ombro na ré — substitui espelho e minimapa,
-        // e é o gesto real do operador
-        const querBack = st.v < -0.15;
-        S.backHold = querBack ? S.backHold + dt : 0;
-        const autoOn = (S.backHold > 0.25 || S.lookHeld) && S.manualLookT <= 0;
+        // Olhar por cima do ombro: SÓ manual, no botão "Trás" ou na tecla C.
+        // Existia um gatilho automático ao engatar a ré — é o gesto correto do
+        // operador, mas dentro do jogo a câmera virava sozinha justo quando o
+        // jogador estava corrigindo a posição, e ele perdia a referência do que
+        // estava fazendo. Fidelidade perdendo para controle.
+        const autoOn = S.lookHeld && S.manualLookT <= 0;
         S.autoBack += ((autoOn ? 1 : 0) - S.autoBack) * expK(4.5, dt);
 
         S.lookYaw += (S.lookYawTarget - S.lookYaw) * expK(9, dt);

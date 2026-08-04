@@ -93,14 +93,18 @@ document.getElementById('btRepetir')?.addEventListener('click', () => {
     camera.playIntro();
 });
 document.getElementById('btTrilha')?.addEventListener('click', () => {
-    document.getElementById('card').hidden = true;
+    // ordem importa: a placa violeta (z 13) sobe por cima do cartão (z 12) e
+    // da HUD, e é ela a animação de saída dos dois. Esconder o cartão antes
+    // deixaria um buraco no meio da transição.
     app.voltarAoPortal();
+    setTimeout(() => { document.getElementById('card').hidden = true; }, 220);
 });
 
 /* ---------- HUD ---------- */
 const el = {
     speed: document.getElementById('rSpeed'),
     fork: document.getElementById('rFork'),
+    box: document.querySelector('.readout'),
 };
 let dbg;
 if (DEBUG) {
@@ -119,8 +123,14 @@ function updateReadout(dt) {
     if (hudAcc < 0.1) return;   // 10 Hz basta e evita layout thrash
     hudAcc = 0;
     const s = forklift.state;
-    el.speed.textContent = fmt(Math.abs(s.v) * 3.6);
+    const kmh = Math.abs(s.v) * 3.6;
+    el.speed.textContent = fmt(kmh);
     el.fork.textContent = fmt(s.forkY, 2);
+    // O amarelo hazard deixa de ser cor de base e vira ESTADO. Contra o piso de
+    // concreto do galpão ele tem 1,48:1 de contraste — gasto no permanente, não
+    // significava nada quando o estado ficava perigoso. Agora diz uma coisa só:
+    // a máquina saiu do envelope de velocidade que o próprio chip cita.
+    el.box.classList.toggle('is-limite', kmh > 6);
     if (dbg) {
         dbg.textContent =
             `${fps.toFixed(0)} fps · ${renderer.info.render.calls} draws · tier ${quality.tier}\n` +

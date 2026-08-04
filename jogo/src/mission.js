@@ -8,6 +8,8 @@
 import * as THREE from 'three';
 import { COLOR } from './tokens.js';
 import { P } from './pallet.js';
+import { K } from './forklift.js';
+import { haptics } from './haptics.js';
 
 const D2R = THREE.MathUtils.degToRad;
 
@@ -24,13 +26,11 @@ const GUIA = {
     alinhado: new THREE.Color(COLOR.deep),
 };
 
-/** Vibração háptica. Só existe no Android; iOS ignora silenciosamente — por isso
- *  nunca é o ÚNICO sinal de que algo aconteceu, sempre acompanha som/HUD. */
-function vibrar(padrao) {
-    try { navigator.vibrate?.(padrao); } catch { /* sem suporte, sem problema */ }
-}
 
 export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
+    const reduzirMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let chipTxt = '', chipTom = '', chipT = 0;
+
     /* ---------- guias de garfo projetadas no chão ----------
        Não é muleta de videogame: no último meio metro a face do palete cai a
        42,2° de depressão, abaixo da borda da placa do carro (37,4°) — o encaixe
@@ -61,6 +61,9 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         engate: null,
         deposito: null,
         colisoes: 0,
+        quaseAcidentes: 0,
+        emRisco: false,
+        riscoFrio: 0,
         picoALat: 0,
         pallet: null,
     };
@@ -77,6 +80,9 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         S.engate = null;
         S.deposito = null;
         S.colisoes = 0;
+        S.quaseAcidentes = 0;
+        S.emRisco = false;
+        S.riscoFrio = 0;
         S.picoALat = 0;
         hud.setMarker(mk, {
             pos: new THREE.Vector3(PALETE.x, 0.9, PALETE.z),
@@ -89,15 +95,37 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
 
     function onCollision(hit) {
         S.colisoes++;
+        haptics.toca('colisao', hit.speed);
         telemetry?.push('collision', { speed: +hit.speed.toFixed(2) });
     }
 
+    /* O chip é reescrito a 60 Hz. Sem a guarda de saída, o className era
+       recriado todo frame; e um fade-out-fade-in a cada troca vira piscada
+       dupla justo quando a mensagem mais importa. Um assentamento só lê como
+       "a linha se atualizou". A trava de 380 ms é o que separa aviso de ruído:
+       na aproximação do palete o texto muda várias vezes por segundo. */
     function chip(texto, kind = 'info') {
         const e = document.getElementById('chip');
         if (!e) return;
-        if (!texto) { e.className = 'chip'; return; }
-        if (e.textContent !== texto) e.textContent = texto;
-        e.className = `chip on is-${kind}`;
+        if (!texto) { if (chipTxt) { e.className = 'chip'; chipTxt = ''; } return; }
+        if (texto === chipTxt && kind === chipTom) return;
+
+        const trocaDeTom = kind !== chipTom;
+        e.textContent = texto;
+        e.className = 'chip on is-' + kind;
+
+        const agora = performance.now();
+        if (!reduzirMovimento && agora - chipT > 380) {
+            e.animate([
+                // o translateX(-50%) TEM que estar aqui: é o que centraliza o
+                // chip. Sem ele o elemento salta para a esquerda na animação.
+                { transform: `translateX(-50%) translateY(${trocaDeTom ? -7 : -4}px)`, opacity: .35 },
+                { transform: 'translateX(-50%) translateY(0)', opacity: 1 },
+            ], { duration: trocaDeTom ? 240 : 190, easing: 'cubic-bezier(.14,.8,.26,1)' });
+            chipT = agora;
+        }
+        chipTxt = texto;
+        chipTom = kind;
     }
 
     function atualizaGuias(cand, st) {
@@ -124,6 +152,24 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         S.semProgresso += dt;
         S.picoALat = Math.max(S.picoALat, Math.abs(st.aLat));
 
+        /* ---------- quase-acidente ----------
+           A aceleração lateral já era calculada e já alimentava o roll da
+           cabine, mas ninguém a registrava: o contador do relatório e o do
+           painel da turma nasceriam sempre zerados. Histerese de 30% para não
+           disparar em rajada enquanto o jogador segura a curva. */
+        const limiar = st.loaded ? K.ALAT_WARN_LOAD : K.ALAT_WARN;
+        S.riscoFrio = Math.max(0, S.riscoFrio - dt);
+        if (Math.abs(st.aLat) > limiar && !S.emRisco && S.riscoFrio <= 0) {
+            S.emRisco = true;
+            S.riscoFrio = 3;   // um trecho agressivo é UM evento, não doze
+            S.quaseAcidentes++;
+            haptics.toca('quaseAcidente');
+            hud.say('CURVA RÁPIDA DEMAIS — RISCO DE TOMBAMENTO', 'warn', 2.2);
+            telemetry?.push('near_miss', { aLat: +st.aLat.toFixed(2), carregado: st.loaded });
+        } else if (Math.abs(st.aLat) < limiar * 0.7) {
+            S.emRisco = false;
+        }
+
         const pr = palletSys.probe();
         const cand = pr.ok ? pr : null;
         atualizaGuias(cand, st);
@@ -136,7 +182,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         if (S.fase === 'buscar' && cand) {
             S.engate = palletSys.engage(cand);
             S.engate.depth = cand.depth;
-            vibrar([14, 45, 26]);
+            haptics.toca("engate");
             S.fase = 'transportar';
             S.semProgresso = 0;
             S.autoTilt = 0;
@@ -168,7 +214,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             if (r && r.slot) {
                 S.deposito = r;
                 S.fase = 'concluido';
-                vibrar([22, 60, 40]);
+                haptics.toca("deposito");
                 hud.setMarker(mk, { visible: false });
                 hud.say('DEPOSITADO — MISSÃO CONCLUÍDA', 'ok', 4);
                 telemetry?.push('pallet_place', {
@@ -193,7 +239,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
                 const dz = VAGA.y - st.forkY;
                 chip(perto
                     ? `VAGA: ALVO ${n2(VAGA.y)} m · FALTAM ${n2(Math.abs(dz))} m ${dz > 0 ? '▲' : '▼'}`
-                    : 'CARGA A BORDO · LIMITE 8 KM/H · NR-11', 'info');
+                    : 'CARGA A BORDO · LIMITE 6 KM/H · NR-11', 'info');
             }
         } else {
             // fase de busca: a ordem das mensagens é a ordem de correção
@@ -229,8 +275,9 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             ['Profundidade da lâmina', `${n(prof * 100)} %`],
             ['Precisão de depósito', `${n(precDep)} / 100 · erro ${n(d.posErr * 100)} cm`],
             ['Colisões', `${S.colisoes}`],
+            ['Quase-acidentes', `${S.quaseAcidentes}`],
             ['Pico de aceleração lateral', `${n(S.picoALat, 1)} m/s²`],
-        ].map(([k, v]) => `<div class="cr"><span>${k}</span><b>${v}</b></div>`).join('');
+        ].map(([k, v], i) => `<div class="cr" style="--i:${i}"><span>${k}</span><b>${v}</b></div>`).join('');
         card.hidden = false;
     }
 

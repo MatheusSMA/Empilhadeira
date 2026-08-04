@@ -5,14 +5,14 @@
     <meta charset="utf-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#14181C">
+    <meta name="theme-color" content="#12121A">
     <title>Simulador — Formação XR Empilhadeira</title>
     <meta name="description" content="Demonstração jogável da trilha de formação XR de operador de empilhadeira (NR-11).">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="./ui.css">
 
@@ -32,6 +32,12 @@
     <div id="fade"></div>
 
     <div id="overlay">
+
+        <!-- Placa violeta sob as telas do portal. Sem ela, um cross-fade entre
+             duas telas deixa as duas em opacidade parcial ao mesmo tempo e o
+             canvas escuro pisca por baixo. Também serve de cortina na ida e na
+             volta do simulador. -->
+        <div id="pr-plate"></div>
 
 
 
@@ -210,9 +216,14 @@
             </div>
 
             <div class="brandtag">
-                Formação XR · Empilhadeira<br>
-                <b>Demonstração jogável</b><br>
-                Base NR-11
+                <span class="bt-marca">
+                    <svg class="pr-mk" viewBox="0 0 20 26" aria-hidden="true">
+                        <path d="M10 0v13" stroke="currentColor" stroke-width="2.4" />
+                        <path d="M4 13h12l-6 11z" fill="currentColor" />
+                    </svg>
+                    <b>PRUMO</b>
+                </span>
+                <span class="bt-sub">Nível 05 · Carga</span>
             </div>
 
             <div class="chip" id="chip"></div>

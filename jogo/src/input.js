@@ -5,6 +5,8 @@
  * notebook com tela sensível o usuário pode misturar os dois.
  */
 
+import { haptics } from './haptics.js';
+
 const KEYMAP = {
     drive: { pos: ['KeyW', 'ArrowUp'], neg: ['KeyS', 'ArrowDown'] },
     steer: { pos: ['KeyA', 'ArrowLeft'], neg: ['KeyD', 'ArrowRight'] }, // + = esquerda
@@ -126,6 +128,7 @@ function bindButton(el) {
         touchBtn[name] = true;
         el.classList.add('on');
         markTouch();
+        haptics.toca('toque');
         e.preventDefault();
     };
     const up = e => {

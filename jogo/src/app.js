@@ -7,6 +7,24 @@
  * de WhatsApp, formulário é a primeira desculpa para fechar a aba.
  */
 
+import { haptics } from './haptics.js';
+
+/* Direção da transição. Z = mudou de profundidade (Continuar, Sair, entrar no
+   simulador). X = telas irmãs (as três abas). A regra É o desenho: sem um
+   modelo, cada transição vira decisão avulsa e o conjunto perde coerência. */
+const PROF = { boas: 0, inicio: 1, trilha: 1, turma: 1, sim: 2 };
+const LADO = { inicio: 0, trilha: 1, turma: 2 };
+const VS = ['v-esq', 'v-dir', 'v-frente', 'v-tras', 'v-mundo'];
+
+function rumo(de, para) {
+    if (para === 'sim') return 'v-mundo';
+    if (!de || de === para) return 'v-frente';
+    const d = (PROF[para] ?? 1) - (PROF[de] ?? 1);
+    if (d > 0) return 'v-frente';
+    if (d < 0) return 'v-tras';
+    return LADO[para] > LADO[de] ? 'v-dir' : 'v-esq';
+}
+
 const NIVEIS = [
     { n: 1, curto: 'A máquina', titulo: 'Entender a máquina', estado: 'concluido', nota: 92 },
     { n: 2, curto: 'Estabilidade', titulo: 'Estabilidade e capacidade de carga', estado: 'concluido', nota: 84 },
@@ -53,19 +71,53 @@ export function createApp({ onStart, onExit }) {
         if (s?.nome) operador.nome = s.nome;
     } catch { }
 
-    let estado = 'boas';
+    let estado = null;
+    let saindo = null, tSaida = 0;
 
     /** Uma tela por vez. As abas só existem depois de entrar, e nunca durante
      *  o simulador — senão flutuam por cima da cabine. */
     function mostrar(nome) {
+        const antes = estado;
+        if (antes === nome) return;
         estado = nome;
-        for (const k in telas) telas[k]?.classList.toggle('is-active', k === nome);
+        const v = rumo(antes, nome);
+
+        // toque rápido em duas abas não pode deixar tela órfã visível
+        clearTimeout(tSaida);
+        if (saindo) { saindo.classList.remove('is-leaving', ...VS); saindo = null; }
+
+        const velha = telas[antes];
+        for (const k in telas) {
+            const t = telas[k];
+            if (!t) continue;
+            t.classList.remove(...VS);
+            t.classList.toggle('is-active', k === nome);
+        }
+        telas[nome]?.classList.add(v);
+
+        if (velha && velha !== telas[nome]) {
+            velha.classList.add('is-leaving', v);
+            saindo = velha;
+            tSaida = setTimeout(() => {
+                velha.classList.remove('is-leaving', ...VS);
+                saindo = null;
+            }, v === 'v-mundo' ? 300 : 160);
+        }
 
         const noJogo = nome === 'sim';
         const comAbas = !noJogo && nome !== 'boas';
         document.body.classList.toggle('em-jogo', noJogo);
         document.body.classList.toggle('pr-abas', comAbas);
-        abas.hidden = !comAbas;
+
+        // a barra de abas cai ANTES de a placa dissolver: é o primeiro tempo
+        // da entrada no simulador
+        if (noJogo && !abas.hidden) {
+            abas.classList.add('mv-sai');
+            setTimeout(() => { abas.hidden = true; abas.classList.remove('mv-sai'); }, 200);
+        } else {
+            abas.hidden = !comAbas;
+        }
+
         abas.querySelectorAll('.pr-aba').forEach(b =>
             b.classList.toggle('on', b.dataset.aba === nome));
 
@@ -74,6 +126,7 @@ export function createApp({ onStart, onExit }) {
     }
 
     function jogar() {
+        haptics.toca('entrar');
         mostrar('sim');
         onStart(operador);
     }
@@ -137,8 +190,9 @@ export function createApp({ onStart, onExit }) {
         const wrap = el('lista');
         wrap.innerHTML = '';
 
-        for (const lv of NIVEIS) {
+        for (const [i, lv] of NIVEIS.entries()) {
             const li = document.createElement('li');
+            li.style.setProperty('--i', 1 + Math.min(i, 4));
 
             if (lv.estado === 'concluido') {
                 li.className = 'pr-nv';
@@ -185,13 +239,18 @@ export function createApp({ onStart, onExit }) {
 
     el('btEntrar').addEventListener('click', () => {
         if (campoNome.hasAttribute('contenteditable')) commitNome();
+        haptics.toca('toque');
         mostrar('inicio');
     });
     el('btAtual').addEventListener('click', jogar);
     el('btSair').addEventListener('click', () => mostrar('boas'));
 
     abas.querySelectorAll('.pr-aba').forEach(b =>
-        b.addEventListener('click', () => mostrar(b.dataset.aba)));
+        b.addEventListener('click', () => {
+            if (b.dataset.aba === estado) return;   // tocar na aba atual não faz nada
+            haptics.toca('aba');
+            mostrar(b.dataset.aba);
+        }));
 
     function voltarAoPortal() {
         mostrar('inicio');
@@ -210,7 +269,10 @@ export function createApp({ onStart, onExit }) {
             // Link direto: o sócio manda a missão pronta numa reunião curta,
             // sem passar pelo portal.
             const h = location.hash;
-            if (h.startsWith('#/simulador')) jogar();
+            if (h.startsWith('#/simulador')) {
+                document.documentElement.classList.add('direto');
+                jogar();
+            }
             else if (h.startsWith('#/trilha')) mostrar('trilha');
             else if (h.startsWith('#/turma')) mostrar('turma');
             else if (h.startsWith('#/inicio')) mostrar('inicio');

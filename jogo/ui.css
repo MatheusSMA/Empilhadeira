@@ -1389,3 +1389,893 @@ body:not(.em-jogo) .hud {
         font-size: 8.5px;
     }
 }
+
+
+/* =====================================================================
+   PONTE — a cabine passa a falar PRUMO
+   Colar no FIM de jogo/ui.css. Nenhum nome de classe ou estado muda:
+   hud.js, mission.js e input.js continuam escrevendo is-ok / is-warn /
+   is-vaga / is-off / on / big. A ponte é 100% CSS (uma exceção opcional:
+   o gancho .is-limite no main.js, comentado no fim deste arquivo).
+
+   REGRA: se o elemento existe no galpão, é hazard. Se existe só na tela,
+   é PRUMO — placa tinta #12121A, acento lima #D8FF4E, Outfit.
+   Motivo medido: #F0B208 contra o concreto do galpão (#E6E3DC) = 1,48:1,
+   e #D8FF4E contra o mesmo concreto = 1,12:1. Só a tinta (14,5:1) garante
+   silhueta. Acento NUNCA encosta no mundo sem placa ou anel tinta atrás.
+   ===================================================================== */
+
+:root {
+    --hud-plate:  rgba(18, 18, 26, .92);
+    --hud-fio:    rgba(255, 255, 255, .12);
+    --hud-fraco:  rgba(255, 255, 255, .62);
+    --hud-fraco2: rgba(255, 255, 255, .42);
+    --hud-r:      20px;
+    --hud-r-sm:   16px;
+    --hud-sombra: 0 10px 30px rgba(18, 18, 26, .38);
+}
+
+/* Vinheta e corte no tinta do portal, não no ink da cabine. */
+#vig {
+    background: radial-gradient(ellipse 66% 62% at 50% 54%,
+            rgba(18, 18, 26, 0) 40%, rgba(18, 18, 26, .82) 100%);
+}
+
+#fade {
+    background: #12121A;
+}
+
+/* ---------- leitura de velocidade / garfo ---------- */
+
+.readout {
+    background: var(--hud-plate);
+    border: 1px solid var(--hud-fio);
+    border-radius: var(--hud-r);
+    padding: 14px 18px 15px;
+    min-width: 134px;
+    box-shadow: var(--hud-sombra);
+}
+
+.readout .k {
+    font-family: var(--pr-fonte);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--hud-fraco2);
+    margin-bottom: 1px;
+}
+
+.readout .v {
+    font-family: var(--pr-fonte);
+    font-weight: 800;
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: -.035em;
+    color: var(--pr-papel);
+    font-variant-numeric: tabular-nums;
+    transition: color .12s linear;
+}
+
+.readout .v small {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    color: var(--hud-fraco2);
+    margin-left: 4px;
+}
+
+/* O readout atualiza a 10 Hz: sem largura fixa os dígitos proporcionais
+   do Outfit fazem a caixa pular a cada leitura. */
+#rSpeed,
+#rFork {
+    display: inline-block;
+    text-align: right;
+    min-width: 4ch;
+}
+
+.readout .div {
+    border-top: 1px solid rgba(255, 255, 255, .12);
+    margin: 12px 0 10px;
+}
+
+.readout .sub {
+    font-family: var(--pr-fonte);
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1;
+    letter-spacing: -.03em;
+    color: var(--pr-papel);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ÚNICO hazard permanente do software: acima do limite de carga (6 km/h),
+   que a própria copy do chip já cita. Hazard vira ESTADO, não cor de base.
+   Motivo medido, não estético: contra o piso de concreto do galpão o hazard
+   tem 1,48:1 de contraste — gasto no estado permanente, ele não significava
+   nada quando o estado ficava perigoso. */
+.readout.is-limite {
+    border-color: rgba(240, 178, 8, .55);
+}
+
+.readout.is-limite .v {
+    color: var(--hazard);
+}
+
+/* ---------- lockup PRUMO dentro da cabine ---------- */
+
+.brandtag {
+    top: calc(14px + env(safe-area-inset-top));
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    background: var(--hud-plate);
+    border: 1px solid var(--hud-fio);
+    border-radius: var(--hud-r-sm);
+    padding: 9px 14px;
+    font-family: var(--pr-fonte);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1.25;
+    color: var(--hud-fraco2);
+    text-shadow: none;
+    box-shadow: var(--hud-sombra);
+}
+
+.bt-marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--pr-papel);
+}
+
+.bt-marca .pr-mk {
+    width: 11px;
+    height: 14px;
+}
+
+.bt-marca b {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .14em;
+}
+
+/* compatibilidade com o markup atual, enquanto ele não for trocado */
+.brandtag b {
+    color: var(--pr-colete);
+    font-weight: 700;
+}
+
+.bt-marca b {
+    color: var(--pr-papel);
+}
+
+/* ---------- dicas de teclado (desktop) ---------- */
+
+.keyhints {
+    background: var(--hud-fio);
+    border: 1px solid var(--hud-fio);
+    border-radius: var(--pr-pill);
+    box-shadow: var(--hud-sombra);
+}
+
+.keyhints span {
+    background: var(--hud-plate);
+    padding: 10px 13px;
+    font-family: var(--pr-fonte);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--hud-fraco2);
+}
+
+.keyhints span:first-child { padding-left: 18px; }
+.keyhints span:last-child  { padding-right: 18px; }
+
+.keyhints b {
+    color: var(--pr-colete);
+    font-weight: 800;
+}
+
+/* ---------- chip: a voz que ensina ----------
+   Nunca truncar instrução. Duas linhas centradas é melhor que reticências. */
+
+.chip {
+    font-family: var(--pr-fonte);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    background: var(--hud-plate);
+    border: 1px solid var(--hud-fio);
+    border-left: 1px solid var(--hud-fio);
+    border-radius: var(--pr-pill);
+    padding: 11px 18px;
+    color: var(--pr-papel);
+    box-shadow: var(--hud-sombra);
+    white-space: normal;
+    text-overflow: clip;
+    max-width: min(92vw, 34ch);
+    text-align: center;
+    line-height: 1.3;
+}
+
+.chip::before {
+    content: "";
+    display: inline-block;
+    vertical-align: 1px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 9px;
+    background: var(--hud-fraco2);
+}
+
+.chip.is-ok {
+    border-left-color: var(--hud-fio);
+    color: var(--pr-papel);
+}
+
+.chip.is-ok::before { background: var(--pr-colete); }
+
+.chip.is-warn {
+    border-left-color: var(--hud-fio);
+    color: var(--pr-papel);
+}
+
+/* o estado mais frequente do jogo: o hazard fica no disco, não na frase */
+.chip.is-warn::before { background: var(--hazard); }
+
+/* ---------- faixa de aviso ----------
+   Neutro é calmo. Positivo é lima (a mesma forma e cor do .pr-cta).
+   Campo hazard cheio fica só para risco — é o único amarelo que vence
+   um galpão amarelo, porque é área saturada e não traço fino. */
+
+.banner {
+    font-family: var(--pr-fonte);
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -.005em;
+    text-transform: none;
+    background: var(--pr-tinta);
+    color: var(--pr-papel);
+    border-radius: var(--pr-pill);
+    padding: 13px 22px;
+    white-space: normal;
+    text-overflow: clip;
+    max-width: min(90vw, 40ch);
+    text-align: center;
+    line-height: 1.25;
+    box-shadow: 0 0 0 2px var(--pr-tinta), 0 12px 34px rgba(18, 18, 26, .4);
+}
+
+.banner.is-ok {
+    background: var(--pr-colete);
+    color: var(--pr-tinta);
+}
+
+.banner.is-warn,
+.banner.is-risco {
+    background: var(--hazard);
+    color: var(--pr-tinta);
+}
+
+/* ---------- marcadores projetados ----------
+   Pior caso de contraste do projeto: flutuam sobre caixas bege (#B99760),
+   racks (#9A5F1E) e concreto claro. Placa tinta é obrigatória. */
+
+.mk-body {
+    background: var(--hud-plate);
+    border: 1px solid var(--hud-fio);
+    border-radius: var(--hud-r-sm);
+    padding: 9px 14px;
+    box-shadow: var(--hud-sombra);
+}
+
+.mk-lbl {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--pr-fonte);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .01em;
+    text-transform: none;
+    color: var(--pr-papel);
+}
+
+.mk-lbl::before {
+    content: "";
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--pr-colete);
+}
+
+.mk-sub {
+    font-family: var(--pr-fonte);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--hud-fraco2);
+    margin-top: 2px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* O DESTINO inverte: campo lima com anel tinta. Seguro porque mission.js
+   usa UM marcador só, trocando o kind — nunca há dois competindo. */
+.marker.is-vaga .mk-body {
+    background: var(--pr-colete);
+    border-color: var(--pr-tinta);
+    box-shadow: 0 0 0 2px var(--pr-tinta), var(--hud-sombra);
+}
+
+.marker.is-vaga .mk-lbl { color: var(--pr-tinta); }
+.marker.is-vaga .mk-lbl::before { background: var(--pr-tinta); }
+.marker.is-vaga .mk-sub { color: rgba(18, 18, 26, .62); }
+
+/* A seta era o pior bug de contraste: triângulo chapado sem placa nenhuma,
+   1,48:1 contra o concreto. Lima + contorno tinta desenhado por sombra. */
+.mk-arrow {
+    border-bottom-color: var(--pr-colete);
+    filter: drop-shadow(0 0 1.5px #12121A) drop-shadow(0 0 3px rgba(18, 18, 26, .9));
+}
+
+/* Fora de quadro: mantém a distância visível — é justo quando ela importa. */
+.marker.is-off .mk-body { padding: 7px 12px; }
+.marker.is-off .mk-lbl  { font-size: 12px; }
+.marker.is-off .mk-sub  { display: block; }
+
+/* ---------- console de toque ---------- */
+
+body.portrait .deck {
+    background: var(--pr-tinta);
+    border-top: 1px solid rgba(255, 255, 255, .08);
+}
+
+.deck-stick {
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: var(--pr-r-card);
+    background: rgba(255, 255, 255, .04);
+}
+
+.deck-k {
+    bottom: 12px;
+    font-family: var(--pr-fonte);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: none;
+    color: rgba(255, 255, 255, .38);
+}
+
+.stick {
+    border: 1.5px solid rgba(255, 255, 255, .16);
+    background: rgba(255, 255, 255, .05);
+}
+
+.stick.on { border-color: rgba(216, 255, 78, .55); }
+
+/* mesmo gesto do .pr-play do portal: círculo lima = onde se toca */
+.stick i {
+    background: var(--pr-colete);
+    box-shadow: 0 6px 18px rgba(18, 18, 26, .55);
+}
+
+.deck-btns { gap: 9px; }
+
+/* .tbtn é a .pr-aba da cabine: pílula, 56px, inverte quando ativa. */
+.tbtn {
+    min-height: 56px;
+    gap: 1px;
+    font-family: var(--pr-fonte);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    text-transform: none;
+    background: var(--pr-tinta);
+    border: 1px solid rgba(255, 255, 255, .16);
+    border-radius: var(--pr-pill);
+    color: var(--pr-papel);
+}
+
+.tbtn em {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: rgba(255, 255, 255, .5);
+}
+
+/* No nível 5 o verbo é o garfo: os dois botões que importam são os únicos
+   claros. Hierarquia de interface resolvendo problema de gameplay. */
+.tbtn.big {
+    background: var(--pr-papel);
+    border-color: var(--pr-papel);
+    color: var(--pr-tinta);
+    font-size: 22px;
+}
+
+.tbtn.big em {
+    font-size: 11px;
+    color: rgba(18, 18, 26, .6);
+}
+
+/* .on DEPOIS de .big de propósito: mesma especificidade, ordem decide. */
+.tbtn.on {
+    background: var(--pr-colete);
+    border-color: var(--pr-colete);
+    color: var(--pr-tinta);
+    font-weight: 800;
+}
+
+.tbtn.on em { color: rgba(18, 18, 26, .65); }
+
+/* ---------- cartão final: PRUMO puro ----------
+   É o instante em que o jogador para de ser operador e volta a ser aluno.
+   O scrim violeta faz o campo do portal reaparecer por cima do galpão
+   congelado — a plataforma engolindo a máquina de volta. */
+
+#card {
+    background: rgba(122, 123, 245, .92);
+}
+
+@supports (backdrop-filter: blur(2px)) {
+    #card { backdrop-filter: blur(3px); }
+}
+
+.card-box {
+    max-width: 430px;
+    background: var(--pr-papel);
+    color: var(--pr-tinta);
+    border-top: 0;
+    border-radius: var(--pr-r-card);
+    padding: 28px 26px 26px;
+    box-shadow: 0 24px 60px rgba(18, 18, 26, .35);
+}
+
+/* a pílula .pr-norma, citada literalmente */
+.card-lbl {
+    display: inline-block;
+    background: var(--pr-tinta);
+    color: var(--pr-colete);
+    border-radius: var(--pr-pill);
+    padding: 5px 13px;
+    font-family: var(--pr-fonte);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: none;
+    margin-bottom: 16px;
+}
+
+.card-box h2 {
+    font-family: var(--pr-fonte);
+    font-weight: 800;
+    font-size: 32px;
+    line-height: 1.04;
+    letter-spacing: -.035em;
+    text-transform: none;
+    margin-bottom: 18px;
+}
+
+.cr {
+    padding: 11px 0;
+    border-bottom: 1px solid rgba(18, 18, 26, .10);
+}
+
+.cr span {
+    font-family: var(--pr-fonte);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: rgba(18, 18, 26, .55);
+}
+
+.cr b {
+    font-family: var(--pr-fonte);
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+.card-foot {
+    font-family: var(--pr-fonte);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+    color: rgba(18, 18, 26, .55);
+    line-height: 1.45;
+    margin-top: 16px;
+}
+
+.card-act {
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.card-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+    padding: 0 18px;
+    font-family: var(--pr-fonte);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    text-transform: none;
+    border-radius: var(--pr-pill);
+}
+
+/* Regras por ID: funcionam com a classe .ghost onde ela está hoje.
+   "Voltar à trilha" é a primária — é a ação que reencena a venda. */
+#btTrilha {
+    background: var(--pr-tinta);
+    color: var(--pr-colete);
+    border: 0;
+}
+
+#btRepetir {
+    background: transparent;
+    color: var(--pr-tinta);
+    border: 2px solid rgba(18, 18, 26, .16);
+}
+
+/* ---------- falhar bonito, também em PRUMO ----------
+   Obrigatório: com Barlow e Plex fora do <link>, --display cai em Impact. */
+
+#nowebgl {
+    background: var(--pr-papel);
+    color: var(--pr-tinta);
+    font-family: var(--pr-fonte);
+}
+
+#nowebgl .box {
+    border-left: 0;
+    border-radius: var(--pr-r-card);
+    background: rgba(18, 18, 26, .05);
+    padding: 30px 32px;
+}
+
+#nowebgl .lbl {
+    display: inline-block;
+    background: var(--pr-tinta);
+    color: var(--pr-colete);
+    border-radius: var(--pr-pill);
+    padding: 5px 13px;
+    font-family: var(--pr-fonte);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: none;
+    margin-bottom: 14px;
+}
+
+#nowebgl h1 {
+    font-family: var(--pr-fonte);
+    font-weight: 800;
+    font-size: 32px;
+    line-height: 1.04;
+    letter-spacing: -.035em;
+    text-transform: none;
+    margin-bottom: 12px;
+}
+
+#nowebgl p {
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(18, 18, 26, .62);
+    line-height: 1.5;
+    margin-bottom: 20px;
+}
+
+#nowebgl a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 52px;
+    padding: 0 22px;
+    font-family: var(--pr-fonte);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    text-transform: none;
+    background: var(--pr-tinta);
+    color: var(--pr-colete);
+    border-radius: var(--pr-pill);
+}
+
+@media (max-width: 720px) {
+    .readout { padding: 12px 15px 13px; min-width: 120px; }
+    .readout .v { font-size: 31px; }
+    .brandtag { font-size: 10.5px; padding: 8px 12px; }
+}
+
+
+
+/* =====================================================================
+   MOVIMENTO — a terceira camada
+   Os tokens --pr-* são o portal, os sem prefixo são a cabine. Estes
+   (--mv-*) são de propósito COMPARTILHADOS: é onde os dois sistemas
+   falam a mesma língua. Cor e tipografia continuam discordando; a
+   física, não. Portal se move 26px em 240ms; a cabine se move 10px em
+   200ms. Mesma mão, amplitude menor.
+   Anima só transform e opacity. Sem exceção.
+   ===================================================================== */
+
+:root {
+    --mv-entra: cubic-bezier(.14, .8, .26, 1);   /* desacelera e assenta, sem overshoot */
+    --mv-sai:   cubic-bezier(.4, 0, .9, .35);    /* acelera embora */
+    --mv-firme: cubic-bezier(.3, .7, .3, 1);     /* estados e pressão */
+
+    --mv-toque: 40ms;    /* descida do botão: tem que colar no dedo */
+    --mv-solta: 200ms;   /* subida do botão */
+    --mv-saida: 160ms;   /* tela que sai */
+    --mv-tela:  240ms;   /* tela que entra */
+    --mv-mundo: 420ms;   /* portal <-> cabine */
+    --mv-passo: 36ms;    /* escalonamento */
+}
+
+/* ---------- a placa: o violeta que nunca pisca ----------
+   Vai no HTML, dentro de #overlay, ANTES da primeira <section class="screen pr">:
+       <div id="pr-plate"></div>
+   #overlay já é pointer-events:none e a placa não reverte isso, então
+   ela nunca rouba toque, nem em opacidade 1. */
+
+#pr-plate {
+    position: absolute;
+    inset: 0;
+    z-index: 13;                 /* acima do cartão (12), abaixo das telas (14) */
+    background: var(--pr-violeta);
+}
+
+.screen.pr {
+    background: transparent;     /* o fundo agora é a placa */
+}
+
+body:not(.em-jogo) #pr-plate { animation: mvPlacaEntra 300ms var(--mv-entra) backwards; }
+body.em-jogo      #pr-plate { animation: mvPlacaSai var(--mv-mundo) 60ms var(--mv-sai) both; }
+
+/* link direto para #/simulador: nasce sem placa, sem lampejo violeta */
+html.direto #pr-plate { animation: none; opacity: 0; }
+
+@keyframes mvPlacaEntra { from { opacity: 0 } to { opacity: 1 } }
+@keyframes mvPlacaSai   { from { opacity: 1 } to { opacity: 0 } }
+
+/* ---------- troca de tela ----------
+   Z = mudou de profundidade (Continuar, Sair, entrar no simulador).
+   X = irmãs (as três abas). */
+
+.screen.pr.is-active {
+    display: flex;
+    animation-duration: var(--mv-tela);
+    animation-timing-function: var(--mv-entra);
+    animation-fill-mode: backwards;   /* NUNCA both: brigaria com o :active */
+}
+
+.screen.pr.is-leaving {
+    display: flex;
+    pointer-events: none;
+    animation-duration: var(--mv-saida);
+    animation-timing-function: var(--mv-sai);
+    animation-fill-mode: both;
+}
+
+.v-dir.is-active     { --mv-dx:  26px; animation-name: mvTelaEntraX }
+.v-dir.is-leaving    { --mv-dx: -18px; animation-name: mvTelaSaiX }
+.v-esq.is-active     { --mv-dx: -26px; animation-name: mvTelaEntraX }
+.v-esq.is-leaving    { --mv-dx:  18px; animation-name: mvTelaSaiX }
+
+.v-frente.is-active  { --mv-sc: .955; animation-name: mvTelaEntraZ }
+.v-frente.is-leaving { --mv-sc: 1.05; animation-name: mvTelaSaiZ }
+.v-tras.is-active    { --mv-sc: 1.04; animation-name: mvTelaEntraZ }
+.v-tras.is-leaving   { --mv-sc: .96;  animation-name: mvTelaSaiZ }
+
+/* entrar no simulador: mesma gramática do "Continuar", só que mais longe */
+.v-mundo.is-leaving  { --mv-sc: 1.12; animation-name: mvTelaSaiZ; animation-duration: 300ms }
+
+@keyframes mvTelaEntraX {
+    from { opacity: 0; transform: translate3d(var(--mv-dx), 0, 0) }
+    to   { opacity: 1; transform: none }
+}
+@keyframes mvTelaSaiX {
+    0%   { opacity: 1; transform: none }
+    45%  { opacity: 0 }                       /* mata o texto duplo cedo */
+    100% { opacity: 0; transform: translate3d(var(--mv-dx), 0, 0) }
+}
+@keyframes mvTelaEntraZ {
+    from { opacity: 0; transform: scale(var(--mv-sc)) }
+    to   { opacity: 1; transform: none }
+}
+@keyframes mvTelaSaiZ {
+    0%   { opacity: 1; transform: none }
+    45%  { opacity: 0 }
+    100% { opacity: 0; transform: scale(var(--mv-sc)) }
+}
+
+/* ---------- conteúdo escalonado ----------
+   Uma camada animada por subárvore. .pr-curso anima, os filhos dela não. */
+
+.screen.pr.is-active .pr-avatar-g,
+.screen.pr.is-active .pr-ola,
+.screen.pr.is-active .pr-nome,
+.screen.pr.is-active .pr-cta,
+.screen.pr.is-active .pr-curso,
+.screen.pr.is-active .pr-atual,
+.screen.pr.is-active .pr-corpo-topo > .pr-norma,
+#scr-trilha.is-active .pr-titulo,
+.screen.pr.is-active .pr-cab,
+.screen.pr.is-active .pr-kpi,
+.screen.pr.is-active .pr-alunos,
+.screen.pr.is-active .pr-nv {
+    animation: mvSobe 220ms var(--mv-entra) backwards;
+    animation-delay: calc(60ms + var(--i, 0) * var(--mv-passo));
+}
+
+@keyframes mvSobe {
+    from { opacity: 0; transform: translate3d(0, 10px, 0) }
+    to   { opacity: 1; transform: none }
+}
+
+#scr-boas.is-active .pr-ola,
+#scr-boas.is-active .pr-nome   { --i: 1 }
+#scr-boas.is-active .pr-cta    { --i: 2 }     /* a ação chega por último */
+#scr-inicio.is-active .pr-atual { --i: 1.6 }
+#scr-turma.is-active .pr-kpi:nth-child(2) { --i: 1 }
+#scr-turma.is-active .pr-kpi:nth-child(3) { --i: 2 }
+#scr-turma.is-active .pr-alunos { --i: 3 }
+/* .pr-nv recebe --i do JS (ver bloco no fim) */
+
+/* ---------- barra de abas ----------
+   Entra sozinha: hidden -> flex reinicia a animação. Só entre boas/sim e
+   as abas; trocar de aba não mexe nela, e é isso que dá âncora ao
+   deslizamento lateral. */
+
+.pr-abas { animation: mvAbasEntra 260ms 120ms var(--mv-entra) backwards }
+.pr-abas.mv-sai { animation: mvAbasSai 200ms var(--mv-sai) both; pointer-events: none }
+
+@keyframes mvAbasEntra {
+    from { opacity: 0; transform: translate3d(0, 100%, 0) }
+    to   { opacity: 1; transform: none }
+}
+@keyframes mvAbasSai {
+    to { opacity: 0; transform: translate3d(0, 100%, 0) }
+}
+
+/* recompensa da seleção: só o ícone, 21px, custo zero */
+.pr-aba.on svg { animation: mvPop 280ms var(--mv-firme) }
+@keyframes mvPop {
+    0%   { transform: none }
+    40%  { transform: scale(1.16) }
+    100% { transform: none }
+}
+
+/* ---------- pressão: um gesto só, dos dois lados da fronteira ----------
+   Escala inversamente proporcional ao tamanho. Descida rápida (cola no
+   dedo), subida lenta (não pisca). */
+
+.pr-cta,
+.pr-atual,
+.pr-nv.agora,
+.pr-aba,
+.tbtn {
+    transition: transform var(--mv-solta) var(--mv-entra);
+}
+
+.pr-cta:active,
+.pr-atual:active,
+.pr-nv.agora:active,
+.pr-aba:active,
+.tbtn.on {
+    transition-duration: var(--mv-toque);
+    transition-timing-function: var(--mv-sai);
+}
+
+.pr-cta:active     { transform: scale(.975) }   /* substitui o translateY(2px) */
+.pr-atual:active   { transform: scale(.985) }
+.pr-nv.agora:active { transform: scale(.985) }
+.pr-aba:active     { transform: scale(.94) }
+/* no console use .on (input.js já liga no pointerdown): :active briga com
+   pointer capture e touch-action:none */
+.tbtn.on           { transform: scale(.94) }
+
+/* ---------- o anel do play, reescrito em transform ----------
+   prPulso animava box-shadow: repaint por frame, infinito, com o WebGL
+   rodando atrás. Substituir o bloco @keyframes prPulso e a linha
+   `animation: prPulso ...` de .pr-play por isto. */
+
+.pr-play { position: relative; animation: none }
+.pr-play::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    border: 2px solid var(--pr-colete);
+    animation: mvAnel 2.8s var(--mv-sai) 1.2s infinite;
+}
+@keyframes mvAnel {
+    0%, 72% { opacity: .5; transform: scale(1) }
+    100%    { opacity: 0;  transform: scale(1.46) }
+}
+
+/* ---------- a HUD se monta, não aparece ----------
+   Tudo pendurado em body.em-jogo. Como body:not(.em-jogo) .hud é
+   display:none, o none->block reinicia as animações a cada entrada.
+   Zero JS. Amplitude da cabine: 10-14px, não 26px.
+   Nada disto encosta em .chip, .banner ou .marker — os três já usam
+   transform para se posicionar. */
+
+body.em-jogo .readout  { --mv-dx: -10px; animation: mvHudX 200ms 300ms var(--mv-entra) backwards }
+body.em-jogo .brandtag { --mv-dx:  10px; animation: mvHudX 200ms 340ms var(--mv-entra) backwards }
+body.em-jogo .deck     { animation: mvHudY 240ms 240ms var(--mv-entra) backwards }
+body.em-jogo .keyhints { animation: mvHudY 200ms 420ms var(--mv-entra) backwards }
+
+@keyframes mvHudX {
+    from { opacity: 0; transform: translate3d(var(--mv-dx), 0, 0) }
+    to   { opacity: 1; transform: none }
+}
+@keyframes mvHudY {
+    from { opacity: 0; transform: translate3d(0, 14px, 0) }
+    to   { opacity: 1; transform: none }
+}
+
+/* ---------- cartão de resultado ----------
+   #card usa hidden: display none->flex reinicia sozinho. */
+
+#card          { animation: mvPlacaEntra 200ms var(--mv-entra) backwards }
+#card .card-box { animation: mvCartao 300ms 70ms var(--mv-entra) backwards }
+#card .cr {
+    animation: mvSobe 200ms var(--mv-entra) backwards;
+    animation-delay: calc(200ms + var(--i, 0) * 40ms);
+}
+@keyframes mvCartao {
+    from { opacity: 0; transform: translate3d(0, 16px, 0) scale(.985) }
+    to   { opacity: 1; transform: none }
+}
+
+/* ---------- movimento reduzido ----------
+   Não é "animation: none". Corte seco entre violeta chapado e um mundo 3D
+   em movimento é PIOR para quem tem sensibilidade vestibular. O que
+   incomoda é deslocamento, não luminosidade: some o movimento, fica o
+   fade. Redefinir o @keyframes pelo nome é o único jeito confiável — um
+   seletor universal perderia para as regras de classe que definem --mv-dx. */
+
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --mv-tela: 130ms;
+        --mv-saida: 110ms;
+        --mv-mundo: 220ms;
+        --mv-passo: 0ms;
+    }
+
+    @keyframes mvTelaEntraX { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvTelaEntraZ { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvTelaSaiX   { from { opacity: 1 } to { opacity: 0 } }
+    @keyframes mvTelaSaiZ   { from { opacity: 1 } to { opacity: 0 } }
+    @keyframes mvSobe       { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvHudX       { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvHudY       { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvCartao     { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvAbasEntra  { from { opacity: 0 } to { opacity: 1 } }
+    @keyframes mvAbasSai    { to   { opacity: 0 } }
+
+    .pr-cta:active,
+    .pr-atual:active,
+    .pr-nv.agora:active,
+    .pr-aba:active,
+    .tbtn.on { transform: none }
+
+    .pr-play::after,
+    .pr-aba.on svg { animation: none }
+}
+
+
