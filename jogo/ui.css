@@ -2023,7 +2023,8 @@ body.portrait .deck {
     --mv-tela:  240ms;   /* tela que entra */
     --mv-mundo: 420ms;   /* portal <-> cabine */
     --mv-passo: 36ms;    /* escalonamento */
-    --mv-empurra: 300ms; /* deslizamento de tela */
+    --mv-empurra: 300ms; /* deslizamento lateral entre irmãs */
+    --mv-sequencia: 260ms; /* saída, antes da entrada, na mudança de profundidade */
     --mv-desliza: cubic-bezier(.32, .72, 0, 1);   /* curva de empurrão */
 }
 
@@ -2083,17 +2084,25 @@ html.direto #pr-plate { animation: none; opacity: 0; }
 .v-esq.is-active     { --mv-de: -100%; --mv-para: 0; animation-name: mvEntraX }
 .v-esq.is-leaving    { --mv-de: 0; --mv-para:  100%; animation-name: mvSaiX }
 
-/* profundidade: o novo sobe de baixo, o velho sai por cima */
-.v-frente.is-active  { --mv-de:  100%; --mv-para: 0; animation-name: mvEntraY }
-.v-frente.is-leaving { --mv-de: 0; --mv-para:  -34%; animation-name: mvSaiY }
-.v-tras.is-active    { --mv-de:  -34%; --mv-para: 0; animation-name: mvEntraY }
-.v-tras.is-leaving   { --mv-de: 0; --mv-para:  100%; animation-name: mvSaiY }
+/* profundidade: SEQUENCIAL, não simultâneo.
+   Nas irmãs o empurrão lado a lado funciona porque as duas telas se tocam. Na
+   mudança de profundidade não: as duas se sobrepondo lia como piscada, mesmo
+   sem opacidade nenhuma. Aqui a tela velha desce e SAI inteira primeiro, e só
+   então a nova entra — a espera é o que faz o olho ver duas coisas separadas
+   em vez de uma troca instantânea. */
+.screen.pr.v-frente.is-leaving { --mv-de: 0; --mv-para: 100%; animation-name: mvSaiY;
+                       animation-duration: var(--mv-sequencia) }
+.screen.pr.v-frente.is-active  { --mv-de: -100%; --mv-para: 0; animation-name: mvEntraY;
+                       animation-delay: var(--mv-sequencia) }
 
-/* a que fica parada atrás anda menos (34%): é o que dá camada em vez de
-   duas folhas correndo lado a lado */
+.screen.pr.v-tras.is-leaving   { --mv-de: 0; --mv-para: -100%; animation-name: mvSaiY;
+                       animation-duration: var(--mv-sequencia) }
+.screen.pr.v-tras.is-active    { --mv-de: 100%; --mv-para: 0; animation-name: mvEntraY;
+                       animation-delay: var(--mv-sequencia) }
 
 /* entrar no simulador: o portal sai por cima e a placa dissolve atrás */
-.v-mundo.is-leaving  { --mv-de: 0; --mv-para: -100%; animation-name: mvSaiY }
+.screen.pr.v-mundo.is-leaving  { --mv-de: 0; --mv-para: 100%; animation-name: mvSaiY;
+                       animation-duration: var(--mv-sequencia) }
 
 /* Entrada e saída PRECISAM de nomes diferentes. Com o mesmo nome, trocar só as
    custom properties não reinicia a animação: a tela que sai mantinha a
@@ -2257,6 +2266,7 @@ body.em-jogo .keyhints { animation: mvHudY 200ms 420ms var(--mv-entra) backwards
     :root {
         --mv-tela: 130ms;
         --mv-empurra: 140ms;
+        --mv-sequencia: 110ms;
         --mv-saida: 110ms;
         --mv-mundo: 220ms;
         --mv-passo: 0ms;

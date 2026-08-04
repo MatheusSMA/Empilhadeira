@@ -31,6 +31,12 @@ export const K = {
     BRAKE: 4.2,
     DRAG: 0.8,
     FORK_MIN: 0.05,             // = altura da barra do garfo no mundo (ver mastPivot)
+    // Altura máxima de trânsito. Acima disso a máquina só rasteja: trafegar com
+    // o garfo alto é item real de NR-11 e some do relatório se o jogo permitir.
+    // Rastejo em vez de trava dura porque travar impediria o ajuste fino na
+    // prateleira — e travar o jogador é a única coisa que não se pode fazer.
+    FORK_TRANSITO: 0.55,
+    V_GARFO_ALTO: 0.35,
     FORK_MAX: 3.20,
     FORK_SPEED: 0.9,
     TILT_MIN: THREE.MathUtils.degToRad(-3),
@@ -180,11 +186,13 @@ export function createForklift() {
         v: 0, delta: 0, omega: 0, aLat: 0,
         forkY: K.FORK_MIN, tilt: 0,
         loaded: false,
+        garfoAlto: false,
         get speed() { return S.v; },
     };
 
     function step(dt, axes) {
-        const vmax = S.loaded ? K.VMAX_LOAD : K.VMAX;
+        S.garfoAlto = S.forkY > K.FORK_TRANSITO;
+        const vmax = S.garfoAlto ? K.V_GARFO_ALTO : (S.loaded ? K.VMAX_LOAD : K.VMAX);
 
         // --- tração ---
         const th = axes.drive;
@@ -193,7 +201,7 @@ export function createForklift() {
         else S.v -= Math.sign(S.v) * Math.min(Math.abs(S.v), K.DRAG * dt);
         // freio ativo ao inverter o comando
         if (th * S.v < -0.01) S.v -= Math.sign(S.v) * Math.min(Math.abs(S.v), K.BRAKE * dt);
-        S.v = THREE.MathUtils.clamp(S.v, K.VREV, vmax);
+        S.v = THREE.MathUtils.clamp(S.v, S.garfoAlto ? -K.V_GARFO_ALTO : K.VREV, vmax);
 
         // --- esterço traseiro ---
         // s = +1 significa "quero ir para a esquerda". `delta` é interno e já
@@ -202,7 +210,15 @@ export function createForklift() {
         // ~1,85 m — bico fino, é o momento "uau". A toda, fecha para ~22°: sem isso
         // a máquina vira pião a 10 km/h e embrulha o estômago de quem só quer ver a demo.
         const sf = 1 - K.STEER_FALLOFF * Math.min(Math.abs(S.v) / vmax, 1);
-        const dTarget = axes.steer * K.DMAX * sf;
+
+        // Na ré a fórmula inverte sozinha: analógico à direita fazia o nariz —
+        // e portanto a vista inteira — girar para a esquerda. É o comportamento
+        // mecânico correto do esterço traseiro, mas como se dirige olhando para
+        // frente, lê como controle quebrado. Playtest derrubou a fidelidade:
+        // o comando do jogador é negado na ré para que a vista sempre gire para
+        // o lado do polegar.
+        const sJogador = axes.steer * (S.v < -0.05 ? -1 : 1);
+        const dTarget = sJogador * K.DMAX * sf;
         const dMax = K.SERVO * dt;
         S.delta += THREE.MathUtils.clamp(dTarget - S.delta, -dMax, dMax);
 
@@ -243,6 +259,7 @@ export function createForklift() {
         S.forkY = K.FORK_MIN;
         S.tilt = 0;
         S.loaded = false;
+        S.garfoAlto = false;
         body.rotation.set(0, 0, 0);
         root.position.set(x, 0, z);
         root.rotation.y = yaw;

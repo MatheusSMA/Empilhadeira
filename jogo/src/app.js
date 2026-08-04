@@ -98,10 +98,14 @@ export function createApp({ onStart, onExit }) {
         if (velha && velha !== telas[nome]) {
             velha.classList.add('is-leaving', v);
             saindo = velha;
+            // Profundidade é sequencial (sai 260ms, depois entra 300ms), lateral
+            // é simultâneo. Limpar antes do fim faz a tela sumir no meio do
+            // movimento — e isso lê exatamente como a piscada que se quer evitar.
+            const lateral = v === 'v-dir' || v === 'v-esq';
             tSaida = setTimeout(() => {
                 velha.classList.remove('is-leaving', ...VS);
                 saindo = null;
-            }, v === 'v-mundo' ? 300 : 160);
+            }, lateral ? 320 : 580);
         }
 
         const noJogo = nome === 'sim';
@@ -251,6 +255,16 @@ export function createApp({ onStart, onExit }) {
             haptics.toca('aba');
             mostrar(b.dataset.aba);
         }));
+
+    /* Vibração por delegação: qualquer coisa clicável do portal e do cartão
+       final responde, sem precisar lembrar de ligar caso a caso. Os botões do
+       console de toque ficam de fora porque input.js já os trata no pointerdown
+       — ali a resposta tem que vir na descida do dedo, não no clique. */
+    document.getElementById('overlay').addEventListener('pointerdown', e => {
+        const alvo = e.target.closest('button, [role="button"], .pr-aba, .pr-nv.agora');
+        if (!alvo || alvo.hasAttribute('data-btn')) return;
+        haptics.toca(alvo.classList.contains('pr-aba') ? 'aba' : 'toque');
+    }, true);
 
     function voltarAoPortal() {
         mostrar('inicio');

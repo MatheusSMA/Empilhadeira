@@ -60,58 +60,52 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
        Base escura obrigatória: a lima tem 1,12:1 de contraste contra o
        concreto do piso — sozinha ela some. Escuro dá a silhueta, a lima dá o
        estado. Mesma regra da HUD. */
-    const PISTA = { LEN: 3.6, LARG: 0.92, BITOLA: 0.30, PERTO: 6.0, TRAVA: 3.6 };
+    const PISTA = { N: 26, LARG: 0.92, BITOLA: 0.30, PERTO: 6.5, TRAVA: 4.0 };
 
-    function criarPista() {
-        const g = new THREE.Group();
-
-        const base = new THREE.Mesh(
-            new THREE.PlaneGeometry(PISTA.LARG, PISTA.LEN),
-            new THREE.MeshBasicMaterial({
-                color: COLOR.ink, transparent: true, opacity: 0.34, depthWrite: false,
-            })
-        );
-        base.rotation.x = -Math.PI / 2;
-        base.position.set(0, 0.018, PISTA.LEN / 2 + 0.5);
-        base.renderOrder = 2;
-        g.add(base);
-
-        const matTrilho = new THREE.MeshBasicMaterial({
-            color: COLOR.hazard, transparent: true, opacity: 0.9, depthWrite: false,
-        });
-        const trilhos = [];
-        for (const sx of [-PISTA.BITOLA, PISTA.BITOLA]) {
-            const t = new THREE.Mesh(new THREE.PlaneGeometry(0.055, PISTA.LEN), matTrilho);
-            t.rotation.x = -Math.PI / 2;
-            t.position.set(sx, 0.026, PISTA.LEN / 2 + 0.5);
-            t.renderOrder = 4;
-            g.add(t);
-            trilhos.push(t);
+    /** Fita de largura fixa gerada por frame ao longo de uma curva. Não dá para
+     *  usar PlaneGeometry: o caminho muda a cada quadro. */
+    function criarFita(meiaLargura, cor, opacidade, ordem) {
+        const n = PISTA.N;
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array((n + 1) * 6), 3));
+        const idx = [];
+        for (let i = 0; i < n; i++) {
+            const a = i * 2;
+            idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
         }
-
-        // travessas: dão noção de distância que uma linha lisa não dá
-        const travessas = [];
-        for (let i = 1; i <= 4; i++) {
-            const t = new THREE.Mesh(
-                new THREE.PlaneGeometry(PISTA.BITOLA * 2, 0.045), matTrilho.clone());
-            t.rotation.x = -Math.PI / 2;
-            t.position.set(0, 0.024, 0.5 + i * (PISTA.LEN / 4.6));
-            t.renderOrder = 3;
-            t.material.opacity = 0.5;
-            g.add(t);
-            travessas.push(t);
-        }
-
-        g.visible = false;
-        scene.add(g);
-        return { grupo: g, base, trilhos, travessas, mat: matTrilho };
+        geo.setIndex(idx);
+        const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+            color: cor, transparent: true, opacity: opacidade,
+            depthWrite: false, side: THREE.DoubleSide,
+        }));
+        m.renderOrder = ordem;
+        m.frustumCulled = false;
+        return { mesh: m, meiaLargura, pos: geo.attributes.position };
     }
 
-    const pista = criarPista();
-    const _pv = new THREE.Vector3();
+    const pista = (() => {
+        const g = new THREE.Group();
+        const base = criarFita(PISTA.LARG / 2, COLOR.ink, 0.34, 2);
+        const trilhoE = criarFita(0.028, COLOR.hazard, 0.9, 4);
+        const trilhoD = criarFita(0.028, COLOR.hazard, 0.9, 4);
+        trilhoE.desvio = -PISTA.BITOLA;
+        trilhoD.desvio = PISTA.BITOLA;
+        base.desvio = 0;
+        g.add(base.mesh, trilhoE.mesh, trilhoD.mesh);
+        g.visible = false;
+        scene.add(g);
+        return { grupo: g, fitas: [base, trilhoE, trilhoD] };
+    })();
 
-    /** Posiciona a pista no alvo, virada para quem chega, e colore pelo quanto
-     *  a máquina já está no eixo. Devolve o desvio para a HUD. */
+    /** Caminho curvo do jogador até o alvo.
+     *
+     *  Uma reta saindo do alvo dizia onde ficar, mas não COMO chegar lá: quem
+     *  está fora do eixo tinha que descobrir sozinho a manobra. A curva sai da
+     *  posição atual da máquina, na direção em que ela aponta, e chega no alvo
+     *  já alinhada com o eixo de entrada — é o caminho a percorrer, desenhado.
+     *
+     *  Hermite cúbica: as tangentes das pontas é que garantem sair "de onde
+     *  estou olhando" e chegar "de frente". */
     function atualizaPista(alvo, st, simetrico) {
         if (!alvo) { pista.grupo.visible = false; return null; }
 
@@ -119,32 +113,57 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         const dist = Math.hypot(dx, dz);
         if (dist > PISTA.PERTO) { pista.grupo.visible = false; return null; }
 
-        // Palete tem simetria de 180°: a pista nasce do lado por onde se chega.
+        // Palete tem simetria de 180°: a entrada é pelo lado de quem chega.
         let yaw = alvo.yaw || 0;
         if (simetrico && (Math.sin(yaw) * dx + Math.cos(yaw) * dz) < 0) yaw += Math.PI;
 
-        pista.grupo.position.set(alvo.x, 0, alvo.z);
-        pista.grupo.rotation.y = yaw;
-        pista.grupo.visible = true;
+        // eixo que sai do alvo em direção a quem chega
+        const ax = Math.sin(yaw), az = Math.cos(yaw);
 
-        // desvio lateral em relação ao eixo da pista, e erro de rumo
         const lateral = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
         let rumoErr = st.yaw - (yaw + Math.PI);
         rumoErr = Math.abs(Math.atan2(Math.sin(rumoErr), Math.cos(rumoErr)));
-
         const noEixo = Math.abs(lateral) < 0.34 && rumoErr < D2R(16);
-        const fade = THREE.MathUtils.clamp((PISTA.PERTO - dist) / (PISTA.PERTO - PISTA.TRAVA), 0, 1);
 
-        pista.base.material.opacity = 0.34 * fade;
+        // P0 = máquina · P1 = boca do alvo. Tangente de chegada = entrar pelo eixo.
+        const p0x = st.x, p0z = st.z;
+        const p1x = alvo.x + ax * 1.15, p1z = alvo.z + az * 1.15;
+        const forca = THREE.MathUtils.clamp(dist * 0.85, 1.0, 4.2);
+        const t0x = Math.sin(st.yaw) * forca, t0z = Math.cos(st.yaw) * forca;
+        const t1x = -ax * forca, t1z = -az * forca;
+
+        const n = PISTA.N;
+        const px = new Float32Array(n + 1), pz = new Float32Array(n + 1);
+        for (let i = 0; i <= n; i++) {
+            const t = i / n, t2 = t * t, t3 = t2 * t;
+            const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t;
+            const h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
+            px[i] = h00 * p0x + h10 * t0x + h01 * p1x + h11 * t1x;
+            pz[i] = h00 * p0z + h10 * t0z + h01 * p1z + h11 * t1z;
+        }
+
+        const fade = THREE.MathUtils.clamp((PISTA.PERTO - dist) / (PISTA.PERTO - PISTA.TRAVA), 0, 1);
         const cor = noEixo ? COLOR.deep : COLOR.hazard;
-        for (const t of pista.trilhos) {
-            t.material.color.setHex(cor);
-            t.material.opacity = (noEixo ? 1 : 0.85) * fade;
+
+        for (const f of pista.fitas) {
+            const arr = f.pos.array;
+            for (let i = 0; i <= n; i++) {
+                // normal lateral pela diferença finita do próprio caminho
+                const a = Math.max(0, i - 1), b = Math.min(n, i + 1);
+                let tx = px[b] - px[a], tz = pz[b] - pz[a];
+                const L = Math.hypot(tx, tz) || 1;
+                tx /= L; tz /= L;
+                const nx = tz * f.meiaLargura, nz = -tx * f.meiaLargura;
+                const cx = px[i] + tz * f.desvio, cz = pz[i] - tx * f.desvio;
+                const o = i * 6;
+                arr[o] = cx - nx; arr[o + 1] = 0.02; arr[o + 2] = cz - nz;
+                arr[o + 3] = cx + nx; arr[o + 4] = 0.02; arr[o + 5] = cz + nz;
+            }
+            f.pos.needsUpdate = true;
+            if (f.desvio !== 0) f.mesh.material.color.setHex(cor);
+            f.mesh.material.opacity = (f.desvio === 0 ? 0.34 : (noEixo ? 1 : 0.85)) * fade;
         }
-        for (const t of pista.travessas) {
-            t.material.color.setHex(cor);
-            t.material.opacity = 0.5 * fade;
-        }
+        pista.grupo.visible = true;
         return { lateral, rumoErr, dist, noEixo };
     }
 
@@ -161,6 +180,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         quaseAcidentes: 0,
         emRisco: false,
         riscoFrio: 0,
+        avisouGarfo: false,
         picoALat: 0,
         pallet: null,
         pista: null,
@@ -181,6 +201,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         S.quaseAcidentes = 0;
         S.emRisco = false;
         S.riscoFrio = 0;
+        S.avisouGarfo = false;
         S.picoALat = 0;
         S.pista = null;
         pista.grupo.visible = false;
@@ -270,6 +291,17 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             S.emRisco = false;
         }
 
+        // Garfo alto limita a máquina a rastejar. O aviso dispara uma vez, no
+        // instante em que o jogador TENTA andar — avisar antes disso seria
+        // ruído, porque erguer parado é legítimo.
+        if (st.garfoAlto && Math.abs(input.axes.drive) > 0.2 && !S.avisouGarfo) {
+            S.avisouGarfo = true;
+            haptics.toca('quaseAcidente');
+            hud.say('GARFO ALTO — ABAIXE PARA TRAFEGAR', 'warn', 2.6);
+        } else if (!st.garfoAlto) {
+            S.avisouGarfo = false;
+        }
+
         const pr = palletSys.probe();
         const cand = pr.ok ? pr : null;
         atualizaGuias(cand, st);
@@ -339,11 +371,11 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
 
         if (S.fase === 'concluido') {
             chip('');
+        } else if (st.garfoAlto && !podeSoltar) {
+            chip('GARFO ALTO — MÁQUINA LIMITADA · ABAIXE PARA TRAFEGAR', 'warn');
         } else if (S.fase === 'transportar') {
             if (podeSoltar) {
                 chip('NA VAGA — ABAIXE O GARFO ▼ PARA SOLTAR', 'ok');
-            } else if (st.forkY > 0.6 && Math.abs(st.v) > 0.5) {
-                chip('GARFO ALTO — ABAIXE PARA TRAFEGAR', 'warn');
             } else if (S.pista && !S.pista.noEixo) {
                 // Entregar não tinha dica de alinhamento — só de altura. A pista
                 // dá o desvio, então dá para dizer o que corrigir.

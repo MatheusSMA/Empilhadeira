@@ -65,7 +65,9 @@ function stickReset() {
     stick.x = 0;
     stick.y = 0;
     if (elStick) elStick.classList.remove('on');
-    if (elKnob) elKnob.style.transform = 'translate3d(-26px,-26px,0)';
+    // O CSS já centraliza a bolinha (margin:-26px). Somar outro -26 aqui
+    // a deixava permanentemente 26px acima e à esquerda do centro.
+    if (elKnob) elKnob.style.transform = 'translate3d(0,0,0)';
 }
 
 function stickMove(cx, cy) {
@@ -84,7 +86,7 @@ function stickMove(cx, cy) {
     if (elKnob) {
         const kx = ux * Math.min(len, RADIUS);
         const ky = uy * Math.min(len, RADIUS);
-        elKnob.style.transform = `translate3d(${kx - 26}px,${ky - 26}px,0)`;
+        elKnob.style.transform = `translate3d(${kx}px,${ky}px,0)`;
     }
 }
 

@@ -13,6 +13,7 @@ import { createMission } from './mission.js';
 import { createHud } from './hud.js';
 import { createApp } from './app.js';
 import { input } from './input.js';
+import { haptics } from './haptics.js';
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
 
@@ -137,7 +138,8 @@ function updateReadout(dt) {
             `v ${fmt(s.v, 2)} · δ ${fmt(THREE.MathUtils.radToDeg(s.delta), 0)}° · ` +
             `ω ${fmt(s.omega, 2)} · aLat ${fmt(s.aLat, 1)}\n` +
             `garfo ${fmt(s.forkY, 2)} · tilt ${fmt(THREE.MathUtils.radToDeg(s.tilt), 1)}° · ` +
-            `cam ${camera.mode} · ${input.source}\n` +
+            `cam ${camera.mode} · ${input.source} · ` +
+            `vibra ${haptics.suportado ? 'ok' : 'SEM SUPORTE (iOS não expõe a API)'}\n` +
             `eixos drive ${fmt(input.axes.drive, 2)} steer ${fmt(input.axes.steer, 2)} ` +
             `fork ${fmt(input.axes.fork, 2)} · ${input.debugSources()}`;
     }
