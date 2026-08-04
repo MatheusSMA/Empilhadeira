@@ -2046,7 +2046,13 @@ body.portrait .deck {
 }
 
 body:not(.em-jogo) #pr-plate { animation: mvPlacaEntra 300ms var(--mv-entra) backwards; }
-body.em-jogo      #pr-plate { animation: mvPlacaSai var(--mv-mundo) 60ms var(--mv-sai) both; }
+/* A placa sai DEPOIS de a cabine estar montada, não junto.
+   Em retrato o canvas ocupa só a metade de cima; a metade de baixo é o console.
+   Dissolvendo o violeta antes de o console chegar, a faixa inferior virava o
+   fundo escuro do body por meio segundo — a tela "ficava preta e depois o menu
+   subia". Como a placa está acima da HUD (z 13), a cabine se monta escondida
+   atrás dela e o violeta só abre no fim. */
+body.em-jogo      #pr-plate { animation: mvPlacaSai 340ms 320ms var(--mv-sai) both; }
 
 /* link direto para #/simulador: nasce sem placa, sem lampejo violeta */
 html.direto #pr-plate { animation: none; opacity: 0; }
@@ -2227,10 +2233,10 @@ html.primeira #scr-boas.is-active .pr-cta  { --i: 2 }
    Nada disto encosta em .chip, .banner ou .marker — os três já usam
    transform para se posicionar. */
 
-body.em-jogo .readout  { --mv-dx: -10px; animation: mvHudX 200ms 300ms var(--mv-entra) backwards }
-body.em-jogo .brandtag { --mv-dx:  10px; animation: mvHudX 200ms 340ms var(--mv-entra) backwards }
-body.em-jogo .deck     { animation: mvHudY 240ms 240ms var(--mv-entra) backwards }
-body.em-jogo .keyhints { animation: mvHudY 200ms 420ms var(--mv-entra) backwards }
+body.em-jogo .readout  { --mv-dx: -10px; animation: mvHudX 200ms 120ms var(--mv-entra) backwards }
+body.em-jogo .brandtag { --mv-dx:  10px; animation: mvHudX 200ms 160ms var(--mv-entra) backwards }
+body.em-jogo .deck     { animation: mvHudY 220ms   0ms var(--mv-entra) backwards }
+body.em-jogo .keyhints { animation: mvHudY 200ms 200ms var(--mv-entra) backwards }
 
 @keyframes mvHudX {
     from { opacity: 0; transform: translate3d(var(--mv-dx), 0, 0) }
