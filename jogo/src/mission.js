@@ -10,6 +10,7 @@ import { COLOR } from './tokens.js';
 import { P } from './pallet.js';
 import { K } from './forklift.js';
 import { haptics } from './haptics.js';
+import { caminhoDubins } from './dubins.js';
 
 const D2R = THREE.MathUtils.degToRad;
 
@@ -60,7 +61,13 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
        Base escura obrigatória: a lima tem 1,12:1 de contraste contra o
        concreto do piso — sozinha ela some. Escuro dá a silhueta, a lima dá o
        estado. Mesma regra da HUD. */
-    const PISTA = { N: 26, LARG: 0.92, BITOLA: 0.30, PERTO: 6.5, TRAVA: 4.0 };
+    const PISTA = {
+        N: 26, LARG: 0.92, BITOLA: 0.30, PERTO: 6.5, TRAVA: 4.0,
+        // Raio de giro do guia. A máquina faz 0,57 m parada e 3,2 m a toda;
+        // 1,6 m é o que ela consegue na velocidade de aproximação. Um guia com
+        // raio menor que o real desenha manobra que não sai.
+        RAIO: 1.6,
+    };
 
     /** Fita de largura fixa gerada por frame ao longo de uma curva. Não dá para
      *  usar PlaneGeometry: o caminho muda a cada quadro. */
@@ -125,22 +132,17 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         rumoErr = Math.abs(Math.atan2(Math.sin(rumoErr), Math.cos(rumoErr)));
         const noEixo = Math.abs(lateral) < 0.34 && rumoErr < D2R(16);
 
-        // P0 = máquina · P1 = boca do alvo. Tangente de chegada = entrar pelo eixo.
-        const p0x = st.x, p0z = st.z;
-        const p1x = alvo.x + ax * 1.15, p1z = alvo.z + az * 1.15;
-        const forca = THREE.MathUtils.clamp(dist * 0.85, 1.0, 4.2);
-        const t0x = Math.sin(st.yaw) * forca, t0z = Math.cos(st.yaw) * forca;
-        const t1x = -ax * forca, t1z = -az * forca;
+        /* Caminho de Dubins: o menor trajeto que ESTA máquina consegue percorrer.
+           A interpolação suave anterior ignorava o raio de giro — chegando a 90°
+           do alvo ela desenhava uma curva impossível, e um guia impossível é pior
+           que guia nenhum. Dubins nunca devolve nada mais fechado que R. */
+        const chegada = { x: alvo.x + ax * 1.15, z: alvo.z + az * 1.15, yaw: yaw + Math.PI };
+        const cam = caminhoDubins({ x: st.x, z: st.z, yaw: st.yaw }, chegada, PISTA.RAIO, PISTA.N);
+        if (!cam) { pista.grupo.visible = false; return null; }
 
         const n = PISTA.N;
         const px = new Float32Array(n + 1), pz = new Float32Array(n + 1);
-        for (let i = 0; i <= n; i++) {
-            const t = i / n, t2 = t * t, t3 = t2 * t;
-            const h00 = 2 * t3 - 3 * t2 + 1, h10 = t3 - 2 * t2 + t;
-            const h01 = -2 * t3 + 3 * t2, h11 = t3 - t2;
-            px[i] = h00 * p0x + h10 * t0x + h01 * p1x + h11 * t1x;
-            pz[i] = h00 * p0z + h10 * t0z + h01 * p1z + h11 * t1z;
-        }
+        for (let i = 0; i <= n; i++) { px[i] = cam.pts[i][0]; pz[i] = cam.pts[i][1]; }
 
         const fade = THREE.MathUtils.clamp((PISTA.PERTO - dist) / (PISTA.PERTO - PISTA.TRAVA), 0, 1);
         const cor = noEixo ? COLOR.deep : COLOR.hazard;

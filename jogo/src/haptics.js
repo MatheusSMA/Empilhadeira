@@ -23,20 +23,39 @@ const PADROES = {
     colisao: v => [Math.round(18 + Math.min(v, 2.2) * 20)],
 };
 
+/* Contadores de diagnóstico. "O celular não vibra" tem três causas possíveis e
+ * de fora não dá para distinguir: o código não chamou, chamou e o navegador
+ * recusou, ou o aparelho não tem a API. Sem contar, a investigação é chute. */
+const diag = { tentou: 0, aceitou: 0, recusou: 0, ultimo: '—' };
+
 export const haptics = {
     get suportado() { return suportado; },
+    get diag() { return diag; },
     setLigado(v) { ligado = !!v; },
 
     /** @param {keyof PADROES} nome */
     toca(nome, arg) {
-        if (!suportado || !ligado) return false;
+        diag.ultimo = nome;
+        if (!ligado) return false;
+        if (!suportado) { diag.recusou++; return false; }
         const p = PADROES[nome];
         if (!p) return false;
+        diag.tentou++;
         try {
-            navigator.vibrate(typeof p === 'function' ? p(arg) : p);
-            return true;
+            // O retorno é o sinal: false = o navegador recusou (aba oculta, sem
+            // gesto do usuário, vibração desligada no sistema).
+            const ok = navigator.vibrate(typeof p === 'function' ? p(arg) : p);
+            if (ok) diag.aceitou++; else diag.recusou++;
+            return ok;
         } catch {
-            return false;   // alguns navegadores lançam quando a aba está oculta
+            diag.recusou++;
+            return false;
         }
+    },
+
+    /** Resumo curto para a HUD de debug. */
+    resumo() {
+        if (!suportado) return 'SEM API (iOS não expõe vibração para a web)';
+        return `${diag.aceitou}/${diag.tentou} aceitos · ${diag.ultimo}`;
     },
 };

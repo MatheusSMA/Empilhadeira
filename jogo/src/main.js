@@ -139,7 +139,7 @@ function updateReadout(dt) {
             `ω ${fmt(s.omega, 2)} · aLat ${fmt(s.aLat, 1)}\n` +
             `garfo ${fmt(s.forkY, 2)} · tilt ${fmt(THREE.MathUtils.radToDeg(s.tilt), 1)}° · ` +
             `cam ${camera.mode} · ${input.source} · ` +
-            `vibra ${haptics.suportado ? 'ok' : 'SEM SUPORTE (iOS não expõe a API)'}\n` +
+            `vibra ${haptics.resumo()}\n` +
             `eixos drive ${fmt(input.axes.drive, 2)} steer ${fmt(input.axes.steer, 2)} ` +
             `fork ${fmt(input.axes.fork, 2)} · ${input.debugSources()}`;
     }

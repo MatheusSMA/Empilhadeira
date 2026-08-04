@@ -141,14 +141,24 @@ export function createCameraRig(aspect) {
        Não reusar a pose do chase: a 5,6 m atrás do spawn (z=-1,5) a câmera cairia
        em z=-7,1, dentro da face do rack em z=-6,55 — o plano de abertura seria
        através de uma prateleira. */
+    /** Orientação que aponta para um alvo SEM roll, montada em YXZ igual à da
+     *  cabine. Usar `lookAt` aqui era o defeito: ele devolve um quaternion com
+     *  roll próprio, e interpolar dele até a cabine passava por uma inclinação
+     *  lateral — a câmera chegava torta no motorista. Dois quaternions sem roll
+     *  interpolam sem inventar nenhum. */
+    function miraSemRoll(pos, alvo, out) {
+        const fx = alvo.x - pos.x, fy = alvo.y - pos.y, fz = alvo.z - pos.z;
+        const plano = Math.hypot(fx, fz) || 1e-6;
+        _e.set(Math.atan2(fy, plano), Math.atan2(-fx, -fz), 0);
+        out.setFromEuler(_e);
+    }
+
     function solveIntro(st, out) {
         const sy = Math.sin(st.yaw), cy = Math.cos(st.yaw);
         const lx = 3.6, ly = 2.3, lz = 1.4;
         out.pos.set(st.x + lx * cy + lz * sy, ly, st.z - lx * sy + lz * cy);
-        const look = _p.set(st.x, 1.10, st.z)
-            .addScaledVector(_p2.set(sy, 0, cy), 0.2);
-        const m = new THREE.Matrix4().lookAt(out.pos, look, THREE.Object3D.DEFAULT_UP);
-        out.quat.setFromRotationMatrix(m);
+        _p.set(st.x + sy * 0.2, 1.10, st.z + cy * 0.2);
+        miraSemRoll(out.pos, _p, out.quat);
         out.fov = D2R(44);
     }
 
@@ -168,32 +178,49 @@ export function createCameraRig(aspect) {
     const A = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), fov: vfov };
     const B = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), fov: vfov };
 
+    /* Destino EXCLUSIVO do resultado combinado. Antes o blend escrevia no mesmo
+     * `_p` que os solvers usam de rascunho: a intro calculava a posição, o
+     * solver da vitrine rodava em seguida e sobrescrevia `_p` — que era o
+     * próprio resultado. A câmera saltava quase 4 m no meio da animação e
+     * chegava torta no motorista. Nenhum solver pode tocar nestes dois. */
+    const RES = new THREE.Vector3();
+    const RESQ = new THREE.Quaternion();
+
     function apply(st, body, dt) {
         solveCabine(st, body, dt, A);
 
         let pos = A.pos, quat = A.quat, fov = A.fov;
 
+        RES.copy(A.pos);
+        RESQ.copy(A.quat);
+
         if (S.intro > 0) {
             solveIntro(st, B);
-            const t = S.intro > 0.62 ? 1 : (S.intro / 0.62);
-            const k = 1 - Math.pow(1 - (1 - t), 3);
-            _p.lerpVectors(A.pos, B.pos, t);
-            _q.slerpQuaternions(A.quat, B.quat, t);
-            pos = _p; quat = _q; fov = A.fov + (B.fov - A.fov) * t;
+            // Segura na pose externa no primeiro terço, depois desce até a
+            // cabine com smoothstep. Antes o easing era calculado e jogado fora,
+            // e a descida saía linear — o que lê como câmera arrastada.
+            const bruto = S.intro > 0.62 ? 1 : (S.intro / 0.62);
+            const t = bruto * bruto * (3 - 2 * bruto);
+            RES.lerpVectors(A.pos, B.pos, t);
+            RESQ.slerpQuaternions(A.quat, B.quat, t);
+            fov = A.fov + (B.fov - A.fov) * t;
         } else if (S.mix > 0.001) {
             solveChase(st, dt, B);
-            _p.lerpVectors(A.pos, B.pos, S.mix);
-            _q.slerpQuaternions(A.quat, B.quat, S.mix);
-            pos = _p; quat = _q; fov = A.fov + (B.fov - A.fov) * S.mix;
+            RES.lerpVectors(A.pos, B.pos, S.mix);
+            RESQ.slerpQuaternions(A.quat, B.quat, S.mix);
+            fov = A.fov + (B.fov - A.fov) * S.mix;
         }
 
         // vitrine domina tudo — é estado de portal, não de jogo
         if (S.showcase > 0.001) {
             solveShowcase(st, dt, B);
-            _p2.lerpVectors(pos, B.pos, S.showcase);
-            _q2.slerpQuaternions(quat, B.quat, S.showcase);
-            pos = _p2; quat = _q2; fov = fov + (B.fov - fov) * S.showcase;
+            RES.lerp(B.pos, S.showcase);
+            RESQ.slerp(B.quat, S.showcase);
+            fov = fov + (B.fov - fov) * S.showcase;
         }
+
+        pos = RES;
+        quat = RESQ;
 
         cam.position.copy(pos);
         if (S.shakeT > 0) {
