@@ -133,6 +133,14 @@ export function createHud(root) {
         while (vivos.length > MAX_AVISOS) vivos.shift().el.remove();
     }
 
+    /** Esvazia a pilha na hora. Reiniciar a missão não pode herdar aviso da
+     *  tentativa anterior — "lado errado" pairando sobre uma corrida nova é
+     *  informação falsa, e o jogador acredita nela. */
+    function limpaAvisos() {
+        for (const a of vivos) a.el.remove();
+        vivos.length = 0;
+    }
+
     function setPrompt(text, kind = 'ok') {
         if (!text) { prompt.className = 'prompt'; return; }
         prompt.textContent = text;
@@ -156,5 +164,5 @@ export function createHud(root) {
         }
     }
 
-    return { addMarker, setMarker, say, setPrompt, update, markers };
+    return { addMarker, setMarker, say, limpaAvisos, setPrompt, update, markers };
 }

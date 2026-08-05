@@ -43,6 +43,7 @@ const STEP = 1 / 60;
 let last = performance.now();
 let acc = 0;
 let fps = 60;
+const colisores = [];   // remontado por frame: galpão + paletes no chão
 
 /** Ordem obrigatória: palletSys.reset() reparenteia o palete carregado de volta
  *  para a cena ANTES de removê-lo. Invertendo, ele fica pendurado no carriage e
@@ -165,16 +166,23 @@ function frame(now) {
 
     const s = forklift.state;
 
+    // Colisores do frame = galpão + paletes no chão. O palete precisa parar a
+    // máquina: sem colisor o jogador atravessava a carga, que é justamente o que
+    // torna "chegar torto" indistinguível de "chegar certo".
+    colisores.length = 0;
+    for (const c of world.colliders) colisores.push(c);
+    for (const c of palletSys.colisores()) colisores.push(c);
+
     // passo fixo: o feel tem que ser idêntico em 60 e 120 Hz
     acc = Math.min(acc + dt, 0.2);
     while (acc >= STEP) {
         acc -= STEP;
         forklift.step(STEP, input.axes);
-        const hit = resolveCollision(s, world.colliders);
+        const hit = resolveCollision(s, colisores);
         if (hit) {
             // Em 1ª pessoa um salto em espiral é teleporte do ponto de vista —
             // gatilho clássico de desorientação. Corte em preto enjoa muito menos.
-            if (unstick(s, world.colliders)) camera.blackout(140);
+            if (unstick(s, colisores)) camera.blackout(140);
             forklift.root.position.set(s.x, 0, s.z);
             if (hit.speed > 0.9) { camera.kick(hit.speed * 0.05); mission.onCollision(hit); }
         }

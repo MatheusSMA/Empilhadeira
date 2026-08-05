@@ -24,6 +24,14 @@ export const P = {
     // então a janela precisa abrir CEDO, antes de o jogador atravessar o palete.
     Z_MIN: 0.92,
     Z_MAX: 1.90,
+    /* Meia-caixa do colisor do palete no chão. Menor que a AABB real (que a
+       0,16 rad daria 0,67 × 0,59) de propósito: o ponto dianteiro do chassi tem
+       raio 0,62, então com HD 0,52 o corpo trava a 1,14 m do centro do palete e
+       a janela de encaixe [0,92 · 1,90] continua aberta de 1,14 a 1,90.
+       Encostar TEM que ser possível sem impedir o engate — e o engate dispara
+       antes do contato, então na prática o colisor só age em quem chega torto. */
+    COL_HW: 0.62,
+    COL_HD: 0.52,
     BLADE_MID: 0.70,  // meio da lâmina em local do mastro — usado na correção de tilt
     SNAP_TIME: 0.22,
     PLACE_TOL: 0.60,  // raio de aceitação da vaga de depósito
@@ -120,6 +128,7 @@ export function createTarget() {
 
 const _v = new THREE.Vector3();
 const _q = new THREE.Quaternion();
+const D2R60 = THREE.MathUtils.degToRad(60);
 
 export function createPalletSystem({ scene, forklift }) {
     const pallets = [];
@@ -190,7 +199,12 @@ export function createPalletSystem({ scene, forklift }) {
         // desvio vêm ANTES da profundidade quando já se está por perto: chegar
         // torto encurta a distância projetada, e sem isto a dica manda "recuar"
         // quando o problema real é estar atravessado.
+        /* Lado errado ≠ torto. O palete só tem bolso nas duas faces LONGAS; as
+           curtas são madeira maciça. Acima de 60° de erro o jogador não está
+           torto, está atacando a lateral — e mandar "endireite" ali não diz o
+           que fazer, porque não há como endireitar sem contornar o palete. */
         const porPerto = melhor.dist < 2.6;
+        if (porPerto && melhor.yawErr > D2R60) return { ...melhor, ok: false, falha: 'lado' };
         if (porPerto && melhor.yawErr > P.TOL_YAW) return { ...melhor, ok: false, falha: 'angulo' };
         if (porPerto && melhor.lat > P.TOL_LAT) return { ...melhor, ok: false, falha: 'lateral' };
         if (melhor.depth < P.Z_MIN || melhor.depth > P.Z_MAX)
@@ -206,6 +220,40 @@ export function createPalletSystem({ scene, forklift }) {
     function candidate() {
         const r = probe();
         return r.ok ? r : null;
+    }
+
+    /* Colisores dos paletes que estão NO CHÃO. Sai da lista quem está no garfo
+       (anda junto com a máquina, colidiria consigo mesma) e quem já foi
+       depositado (está na prateleira, que já tem colisor próprio).
+       Reaproveita o objeto por palete para não alocar por frame. */
+    const _cols = [];
+    function colisores() {
+        _cols.length = 0;
+        for (const p of pallets) {
+            if (p.userData.engaged || p.userData.placed) continue;
+            const c = p.userData.colisor
+                || (p.userData.colisor = { x: 0, z: 0, hw: P.COL_HW, hd: P.COL_HD });
+            c.x = p.position.x;
+            c.z = p.position.z;
+            _cols.push(c);
+        }
+        return _cols;
+    }
+
+    /** Por que a vaga não aceita a carga agora? Mesmos testes de canPlace(), mas
+     *  dizendo QUAL falhou — sem isso a HUD só sabe repetir "ainda não". */
+    function placeProbe() {
+        if (!carried || !targetSlot) return { ok: false, falha: 'sem_carga' };
+        carried.getWorldPosition(_v);
+        const a = alvoDeMedida(targetSlot);
+        const dxz = Math.hypot(_v.x - a.x, _v.z - a.z);
+        const dy = _v.y - targetSlot.y;
+        // NaN aqui virava ok:true silencioso — se a pose não for finita, não aceita
+        if (!Number.isFinite(dxz) || !Number.isFinite(dy))
+            return { ok: false, falha: 'indefinido', dxz, dy };
+        if (Math.abs(dy) >= 0.65) return { ok: false, falha: dy > 0 ? 'alto' : 'baixo', dxz, dy };
+        if (dxz >= P.PLACE_TOL) return { ok: false, falha: 'longe', dxz, dy };
+        return { ok: true, dxz, dy };
     }
 
     function engage(c) {
@@ -231,12 +279,22 @@ export function createPalletSystem({ scene, forklift }) {
         return { lat: c.lat, yawErr: c.yawErr, forkErr: c.forkErr };
     }
 
+    /* Ponto contra o qual a entrega é MEDIDA. Não é o centro da vaga: o chassi
+       tem 0,62 m de raio dianteiro e o rack 0,55 m de meia-profundidade, então
+       a carga no garfo nunca chega a menos de 41 cm do centro da vaga — é
+       geometria, não perícia. Medir contra o centro dava nota 32/100 numa
+       manobra perfeita, e 2/100 na minha corrida de teste; um comprador lendo
+       isso conclui que reprovou. O assentamento visual continua indo até o
+       centro da vaga, então nada disto aparece na tela — só na conta. */
+    const alvoDeMedida = (slot) => slot.aim || slot;
+
     /** A vaga aceita o palete agora? Mesmo teste que `release()` usa para decidir
      *  — extraído para que a HUD e o gatilho não possam divergir dele. */
     function canPlace() {
         if (!carried || !targetSlot) return false;
         carried.getWorldPosition(_v);
-        const d = Math.hypot(_v.x - targetSlot.x, _v.z - targetSlot.z);
+        const a = alvoDeMedida(targetSlot);
+        const d = Math.hypot(_v.x - a.x, _v.z - a.z);
         return d < P.PLACE_TOL && Math.abs(_v.y - targetSlot.y) < 0.65;
     }
 
@@ -254,7 +312,8 @@ export function createPalletSystem({ scene, forklift }) {
         // aceita a vaga se estiver perto o bastante — o erro real ainda é medido
         let res = { slot: null, posErr: null };
         if (targetSlot) {
-            const d = Math.hypot(p.position.x - targetSlot.x, p.position.z - targetSlot.z);
+            const a = alvoDeMedida(targetSlot);
+            const d = Math.hypot(p.position.x - a.x, p.position.z - a.z);
             if (d < P.PLACE_TOL && Math.abs(p.position.y - targetSlot.y) < 0.65) {
                 res = { slot: targetSlot, posErr: d };
                 snap = {
@@ -300,7 +359,8 @@ export function createPalletSystem({ scene, forklift }) {
     }
 
     return {
-        pallets, spawn, setTarget, probe, candidate, canPlace, engage, release, update,
+        pallets, spawn, setTarget, probe, candidate, canPlace, placeProbe, colisores,
+        engage, release, update,
         get carried() { return carried; },
         get targetSlot() { return targetSlot; },
         reset() {

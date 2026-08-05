@@ -39,10 +39,28 @@ function segmentoLivre(x0, z0, x1, z1, colisores) {
 
 const PALETE = { x: -1.9, z: 3.4, yaw: 0.16, label: 'SKU 4412', kg: 820 };
 
-// Resolvido contra o gerador do warehouse.js, não estimado:
-// filled = ((b*7 + li*3 + ri*5) % 10) < 7 → para ri=4, li=1 sobram b ∈ {2,5,8}.
-// cx = -13.75 + 5,5·2,75 = 1,375.
-const VAGA = { id: 'R05-B6-N2', label: 'RUA 03 · NÍVEL 2', x: 1.375, y: 1.78, z: 5.43, yaw: Math.PI };
+/* Resolvido contra o gerador do warehouse.js, não estimado:
+   filled = ((b*7 + li*3 + ri*5) % 10) < 7 → para ri=5, li=1 sobram b ∈ {0,3,7}.
+   cx = -13.75 + 0,5·2,75 = -12,375.
+
+   A vaga fica na FACE OPOSTA do mesmo par de prateleiras onde está o palete:
+   ri=5 é o rack de trás do par centrado em z=6, faceSign=+1, então ela é
+   atendida pela rua de cima (z de 7,1 a 12,9) e NÃO pela rua central onde a
+   carga é pega. É isso que faz o nível virar transporte de verdade em vez de
+   um giro de 3,85 m — e é o que garante que o guia de depósito só acenda
+   depois de contornar a prateleira, nunca na rua da coleta.
+
+   b=0 de propósito: encosta na ponta esquerda dos racks (x0 = -13,75), então o
+   contorno pela ponta é curto. Com b=7 o mesmo trajeto ficaria ~12 m mais longo. */
+const VAGA = { id: 'R06-B1-N2', label: 'RUA 03 · FACE B', x: -12.375, y: 1.78, z: 6.57, yaw: 0 };
+
+/* Onde a entrega é MEDIDA, contra o que a máquina alcança de fato:
+     0,55 (meia-profundidade do rack) + 0,62 (raio dianteiro do chassi)
+   travam a origem a 7,72; o palete fica 0,74 à frente dela, logo chega a 6,98.
+   São 41 cm do centro da vaga que nenhuma perícia recupera. Medir contra o
+   centro fazia uma manobra perfeita valer 32/100 — e o cartão é lido pelo
+   comprador. O assentamento visual continua indo até o centro. */
+VAGA.aim = { x: VAGA.x + Math.sin(VAGA.yaw) * 0.41, z: VAGA.z + Math.cos(VAGA.yaw) * 0.41 };
 
 const GUIA = {
     neutro: new THREE.Color(COLOR.slate),
@@ -125,16 +143,11 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         MORRE: 0.30,        // colado na boca as guias do garfo assumem
 
         /* Raio do guia de PERTO. Não é o de aproximação: chegando no alvo a
-           máquina está rastejando, e rastejando ela faz 0,57 m. 0,7 m é honesto
-           para essa velocidade — e, medido, é o que devolve curva de verdade em
-           70% das poses de perto, contra 52% de laços que dava com 1,6 m.
-           O raio do guia tem que acompanhar o regime de velocidade; um raio de
-           corrida usado na manobra fina vira laço, que foi o defeito relatado. */
-        RAIO_PERTO: 0.7,
-        /* Mesmo com raio pequeno sobra ~11% de poses onde o alvo cai DENTRO do
-           círculo de giro — aí não existe curva para a frente, só a volta
-           inteira. Nessas, reta: aponta o alvo sem desenhar manobra impossível,
-           e a visada já provou que o segmento está livre. */
+           máquina está rastejando, e rastejando ela faz 0,57 m. Com 0,9 m o
+           traçado aceito desenha curva visível em 92% das poses, mediana de
+           1,07 m de barriga. O raio do guia tem que acompanhar o regime de
+           velocidade; raio de corrida na manobra fina vira laço. */
+        RAIO_PERTO: 0.9,
         RAZAO_PERTO: 2.6,
 
         REVELA: 0.60,       // segundos do traçado saindo da empilhadeira
@@ -283,12 +296,26 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
                não tem como virar laço, porque o laço vinha justamente de exigir
                o rumo final a 20 cm do alvo. Se a boca ficar atrás, o arco vira
                meia-volta — e aí a volta é a manobra certa, não um traçado torto. */
-            const cam = arcoAtePonto({ x: st.x, z: st.z, yaw: st.yaw },
-                { x: bocaX, z: bocaZ }, PISTA.RAIO_PERTO, n);
-            if (cam && cam.comprimento <= distBoca * PISTA.RAZAO_PERTO) {
+            /* Cascata, da melhor forma para a mais burra. O que dá A CURVA é
+               exigir o rumo de CHEGADA: é ele que faz o traçado abrir e entrar
+               alinhado com o eixo da rua. Soltar esse rumo, como eu tinha feito,
+               devolve reta pura sempre que a máquina já aponta o alvo — que é o
+               tempo todo, porque quem dirige aponta para onde vai. Medido:
+               curvatura 0,00 em todas as poses de quem está indo para lá.
+               Então Dubins primeiro, e só se ele degenerar é que se desce. */
+            const limite = distBoca * PISTA.RAZAO_PERTO;
+            const chegada = { x: bocaX, z: bocaZ, yaw: yaw + Math.PI };
+            const de = { x: st.x, z: st.z, yaw: st.yaw };
+            let cam = caminhoDubins(de, chegada, PISTA.RAIO_PERTO, n);
+            if (!cam || cam.comprimento > limite) {
+                // laçou: tenta sem exigir rumo de chegada — curva menos, mas curva
+                cam = arcoAtePonto(de, { x: bocaX, z: bocaZ }, PISTA.RAIO_PERTO, n);
+            }
+            if (cam && cam.comprimento <= limite) {
                 for (let i = 0; i <= n; i++) { px[i] = cam.pts[i][0]; pz[i] = cam.pts[i][1]; }
             } else {
-                // sem curva possível para a frente: reta, que ao menos aponta certo
+                // o alvo caiu dentro do círculo de giro: não há curva para a
+                // frente, só a volta inteira. Reta ao menos aponta certo.
                 for (let i = 0; i <= n; i++) {
                     const t = i / n;
                     px[i] = st.x + (bocaX - st.x) * t;
@@ -408,6 +435,8 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         pistaRevela: 0,
         pistaPulso: 0,
         pistaEspera: 0,
+        friaVaga: 0,     // trava de repetição do aviso de depósito
+        friaLado: 0,     // trava de repetição do aviso de lado errado
     };
 
     function begin() {
@@ -431,7 +460,10 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         S.pistaRevela = 0;
         S.pistaPulso = 0;
         S.pistaEspera = PISTA.ESPERA_INTRO;
+        S.friaVaga = 0;
+        S.friaLado = 0;
         pista.grupo.visible = false;
+        hud.limpaAvisos();      // corrida nova não herda aviso da anterior
         hud.setMarker(mk, {
             pos: new THREE.Vector3(PALETE.x, 0.9, PALETE.z),
             label: 'PALETE', sub: PALETE.label, kind: 'alvo', visible: true,
@@ -565,7 +597,9 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
                 pos: new THREE.Vector3(VAGA.x, VAGA.y + 0.4, VAGA.z),
                 label: 'VAGA', sub: VAGA.label, kind: 'vaga', visible: true,
             });
-            hud.say('CARGA ENGATADA — ERGA ▲ E LEVE ATÉ A ' + VAGA.label, 'ok', 3.4);
+            // A vaga fica na face oposta da MESMA prateleira: dizer só o código
+            // mandaria o jogador procurar do lado errado, que é onde ele está.
+            hud.say('CARGA ENGATADA — CONTORNE A PRATELEIRA ATÉ A ' + VAGA.label, 'ok', 4.2);
             telemetry?.push('pallet_pick', {
                 lat: +S.engate.lat.toFixed(3),
                 yawErr: +S.engate.yawErr.toFixed(3),
@@ -583,6 +617,22 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
 
         /* ---------- depósito ---------- */
         const podeSoltar = palletSys.canPlace();
+
+        /* Tentou soltar fora da vaga. Só avisa PERTO dela: abaixar o garfo longe
+           dali é manobra legítima (abaixa-se para poder trafegar), e avisar lá
+           seria ruído. O texto diz o que falta, não que falhou. */
+        S.friaVaga = Math.max(0, S.friaVaga - dt);
+        if (S.fase === 'transportar' && !podeSoltar && input.axes.fork < 0
+            && Math.hypot(st.x - VAGA.x, st.z - VAGA.z) < 4.0 && S.friaVaga <= 0) {
+            const pp = palletSys.placeProbe();
+            S.friaVaga = 2.6;
+            hud.say({
+                alto: 'ACIMA DA VAGA — ABAIXE ATÉ O NÍVEL 2',
+                baixo: 'ABAIXO DA VAGA — ERGA ATÉ O NÍVEL 2',
+                longe: 'FORA DA VAGA — APROXIME ATÉ A ' + VAGA.label,
+            }[pp.falha] || 'AINDA NÃO É A VAGA — SIGA A PISTA', 'warn', 2.4);
+        }
+
         if (S.fase === 'transportar' && podeSoltar && input.axes.fork < 0) {
             const r = palletSys.release();
             if (r && r.slot) {
@@ -632,8 +682,19 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
                 chip('NA PISTA · SIGA EM FRENTE', 'ok');
                 return;
             }
+            /* Lado errado é o único erro de coleta que não se corrige de onde
+               se está: tem que contornar. Por isso vira aviso na pilha, e não só
+               linha no chip — é informação que muda o plano, não o volante. */
+            S.friaLado = Math.max(0, S.friaLado - dt);
+            if (pr.falha === 'lado' && S.friaLado <= 0) {
+                S.friaLado = 3.4;
+                haptics.toca('quaseAcidente');
+                hud.say('LADO ERRADO — O PALETE SÓ ABRE PELA FRENTE OU PELO FUNDO', 'warn', 2.8);
+            }
+
             const msg = {
                 nenhum: ['PALETE JÁ RECOLHIDO', 'ok'],
+                lado: ['LADO ERRADO — CONTORNE ATÉ A FACE DO PALETE', 'warn'],
                 longe: ['APROXIME-SE DO PALETE PELA FRENTE', 'info'],
                 perto: ['RECUE UM POUCO — VOCÊ PASSOU DO PALETE', 'warn'],
                 lateral: [`DESVIE PARA A ${lado} PARA CENTRALIZAR`, 'warn'],
