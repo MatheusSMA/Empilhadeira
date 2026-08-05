@@ -15,9 +15,12 @@ export function createHud(root) {
     layer.className = 'markers';
     root.appendChild(layer);
 
-    const banner = document.createElement('div');
-    banner.className = 'banner';
-    root.appendChild(banner);
+    // A coluna de avisos vem do HTML e já contém o chip; os banners entram
+    // ANTES dele, para o chip ficar sempre no pé da pilha.
+    const avisos = root.querySelector('.avisos') || root;
+    const banners = document.createElement('div');
+    banners.className = 'banners';
+    avisos.insertBefore(banners, avisos.firstChild);
 
     const prompt = document.createElement('div');
     prompt.className = 'prompt';
@@ -101,11 +104,33 @@ export function createHud(root) {
         }
     }
 
-    let bannerT = 0;
+    /* ---------- pilha de avisos ----------
+       Era UM elemento reescrito no lugar. Quando duas coisas aconteciam no
+       mesmo segundo — bater e estourar a curva, que é o par mais comum — a
+       segunda apagava a primeira e o jogador via um piscar sem conseguir ler
+       nenhuma das duas. Agora cada aviso é um cartão com vida própria e eles
+       se empilham um debaixo do outro.
+
+       O teto de 3 é o que impede a pilha de virar parede em cima da cena: o
+       quarto aviso empurra o mais velho para fora. */
+    const MAX_AVISOS = 3;
+    const SAIDA = 0.22;         // segundos da transição de saída
+    const vivos = [];
+
     function say(text, kind = 'info', secs = 2.6) {
-        banner.textContent = text;
-        banner.className = `banner is-${kind} on`;
-        bannerT = secs;
+        // repetir o mesmo texto não empilha cópia — só renova o tempo dele
+        const igual = vivos.find(a => a.texto === text && !a.saindo);
+        if (igual) { igual.t = Math.max(igual.t, secs); return; }
+
+        const el = document.createElement('div');
+        el.className = `banner is-${kind}`;
+        el.textContent = text;
+        banners.appendChild(el);
+        void el.offsetWidth;    // sem o reflow a transição de entrada não roda
+        el.classList.add('on');
+
+        vivos.push({ el, texto: text, t: secs, saindo: false });
+        while (vivos.length > MAX_AVISOS) vivos.shift().el.remove();
     }
 
     function setPrompt(text, kind = 'ok') {
@@ -116,9 +141,18 @@ export function createHud(root) {
 
     function update(dt, cam) {
         project(cam);
-        if (bannerT > 0) {
-            bannerT -= dt;
-            if (bannerT <= 0) banner.classList.remove('on');
+        for (let i = vivos.length - 1; i >= 0; i--) {
+            const a = vivos[i];
+            a.t -= dt;
+            if (a.t > 0) continue;
+            if (!a.saindo) {
+                a.saindo = true;
+                a.t = SAIDA;            // deixa a saída rodar antes de tirar do DOM
+                a.el.classList.remove('on');
+                continue;
+            }
+            a.el.remove();
+            vivos.splice(i, 1);
         }
     }
 

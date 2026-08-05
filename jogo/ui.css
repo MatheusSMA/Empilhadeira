@@ -343,11 +343,16 @@ body:not(.em-jogo) .hud {
 
 /* ---------- Chip de estado ---------- */
 
+/* --chip-tx existe porque o chip troca de regime de posicionamento: solto e
+   centrado por transform no desktop, em fluxo dentro de .avisos no toque. O
+   JS que anima o chip lê esta variável — sem ela, o translateX(-50%) do
+   desktop jogaria o chip meia-largura para a esquerda dentro da coluna. */
 .chip {
-    position: absolute;
+    position: fixed;
     left: 50%;
     bottom: calc(22px + env(safe-area-inset-bottom));
-    transform: translateX(-50%) translateY(6px);
+    --chip-tx: -50%;
+    transform: translateX(var(--chip-tx)) translateY(6px);
     font-family: var(--mono);
     font-size: 10px;
     letter-spacing: .12em;
@@ -368,7 +373,7 @@ body:not(.em-jogo) .hud {
 
 .chip.on {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateX(var(--chip-tx)) translateY(0);
 }
 
 .chip.is-ok {
@@ -381,9 +386,16 @@ body:not(.em-jogo) .hud {
     color: var(--hazard);
 }
 
+/* Em toque o rodapé é do painel de controle, então o chip sobe. Mas subir por
+   coordenada, como era (top: 120px), o punha EM CIMA da placa de velocidade em
+   retrato — a placa vai de 16 a ~156 px e o chip centrado é largo o bastante
+   para alcançá-la. Agora ele entra em fluxo na coluna de avisos e a colisão
+   deixa de ser possível, com um aviso ou com seis. */
 body.touch .chip {
+    position: static;
+    left: auto;
     bottom: auto;
-    top: calc(120px + env(safe-area-inset-top));
+    --chip-tx: 0px;
 }
 
 /* ---------- Marcadores projetados ---------- */
@@ -459,13 +471,50 @@ body.touch .chip {
     display: none;
 }
 
+/* ---------- Coluna de avisos ----------
+   Banners e chip na MESMA coluna: é o que garante que não se sobreponham por
+   mais avisos que cheguem de uma vez — quem resolve é o fluxo, não um número
+   mágico de `top` por elemento.
+
+   Sem `transform` aqui de propósito: transform num ancestral vira bloco de
+   contenção e faria o `.chip { position: fixed }` do desktop se ancorar nesta
+   caixa em vez da viewport. Por isso a centralização é left/right + align. */
+.avisos {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(78px + env(safe-area-inset-top));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.banners {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Retrato: a placa de velocidade vai de 16 a 151 px e ocupa quase metade da
+   largura; a coluna centralizada, que começa em 78 px, passava por cima dela.
+   Em paisagem não acontece porque sobra largura e os dois não se cruzam em X.
+   Medido a 375×812 — a placa tem 135 px de altura, então 168 a limpa com folga. */
+body.portrait .avisos,
+body.touch .avisos {
+    top: calc(168px + env(safe-area-inset-top));
+}
+
+@media (max-width: 560px) {
+    .avisos { top: calc(168px + env(safe-area-inset-top)); }
+}
+
 /* ---------- Faixa de aviso ---------- */
 
 .banner {
-    position: absolute;
-    left: 50%;
-    top: calc(78px + env(safe-area-inset-top));
-    transform: translateX(-50%) translateY(-8px);
+    transform: translateY(-8px);
     font-family: var(--mono);
     font-size: 11px;
     letter-spacing: .16em;
@@ -485,7 +534,7 @@ body.touch .chip {
 
 .banner.on {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
 }
 
 .banner.is-ok {

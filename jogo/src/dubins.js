@@ -86,6 +86,65 @@ function avanca(x, y, th, modo, len) {
 }
 
 /**
+ * Arco + reta até um PONTO, sem exigir rumo de chegada.
+ *
+ * Existe porque o Dubins completo degenera de perto: obrigar o rumo final faz
+ * com que corrigir 20 cm custe a volta inteira — de 0 a 1 m o caminho dá 15× a
+ * reta na mediana. Soltando o rumo de chegada some a degeneração e sobra o que
+ * a máquina de fato faz: gira o quanto precisar para apontar o alvo, e vai.
+ *
+ * Nunca devolve laço (o arco é sempre < 2π e só existe um), e nunca fecha mais
+ * que R. Se o alvo cair DENTRO de um dos círculos de giro, aquele lado é
+ * impossível e o outro assume — o alvo não pode estar dentro dos dois, porque
+ * os círculos se tocam num ponto só.
+ *
+ * @returns {{pts: Array<[number,number]>, comprimento: number}|null}
+ */
+export function arcoAtePonto(de, para, R, amostras = 28) {
+    const x0 = de.z, y0 = de.x, th0 = de.yaw;      // mesma troca de eixos de caminhoDubins
+    const xT = para.z, yT = para.x;
+
+    let melhor = null;
+    for (const lado of [1, -1]) {                  // +1 = esquerda (anti-horário), -1 = direita
+        const cx = x0 - lado * R * Math.sin(th0);
+        const cy = y0 + lado * R * Math.cos(th0);
+        const D = Math.hypot(xT - cx, yT - cy);
+        if (D <= R + 1e-6) continue;               // alvo dentro do círculo: por este lado não há
+        const aT = Math.atan2(yT - cy, xT - cx);
+        const phi0 = Math.atan2(y0 - cy, x0 - cx);
+        const phiQ = aT - lado * Math.acos(R / D);
+        const arco = lado > 0 ? mod2pi(phiQ - phi0) : mod2pi(phi0 - phiQ);
+        const reta = Math.sqrt(D * D - R * R);
+        const custo = R * arco + reta;
+        if (!melhor || custo < melhor.custo) melhor = { lado, cx, cy, phi0, arco, custo };
+    }
+    if (!melhor) return null;
+
+    const { lado, cx, cy, phi0, arco, custo } = melhor;
+    const qx = cx + R * Math.cos(phi0 + lado * arco);
+    const qy = cy + R * Math.sin(phi0 + lado * arco);
+    const restante = custo - R * arco;
+    const ux = (xT - qx) / (restante || 1), uy = (yT - qy) / (restante || 1);
+
+    const pts = [];
+    for (let i = 0; i <= amostras; i++) {
+        const s = (i / amostras) * custo;
+        let X, Y;
+        if (s <= R * arco) {
+            const phi = phi0 + lado * (s / R);
+            X = cx + R * Math.cos(phi);
+            Y = cy + R * Math.sin(phi);
+        } else {
+            const t = s - R * arco;
+            X = qx + ux * t;
+            Y = qy + uy * t;
+        }
+        pts.push([Y, X]);                          // de volta para (x, z) do jogo
+    }
+    return { pts, comprimento: custo };
+}
+
+/**
  * Caminho viável entre duas poses no plano XZ do jogo.
  *
  * O jogo usa frente = (sin yaw, cos yaw) no plano (x, z); a literatura usa

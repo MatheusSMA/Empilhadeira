@@ -10,7 +10,7 @@ import { COLOR } from './tokens.js';
 import { P } from './pallet.js';
 import { K } from './forklift.js';
 import { haptics } from './haptics.js';
-import { caminhoDubins } from './dubins.js';
+import { caminhoDubins, arcoAtePonto } from './dubins.js';
 
 const D2R = THREE.MathUtils.degToRad;
 
@@ -124,6 +124,19 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         RAZAO_MAX: 2.2,
         MORRE: 0.30,        // colado na boca as guias do garfo assumem
 
+        /* Raio do guia de PERTO. Não é o de aproximação: chegando no alvo a
+           máquina está rastejando, e rastejando ela faz 0,57 m. 0,7 m é honesto
+           para essa velocidade — e, medido, é o que devolve curva de verdade em
+           70% das poses de perto, contra 52% de laços que dava com 1,6 m.
+           O raio do guia tem que acompanhar o regime de velocidade; um raio de
+           corrida usado na manobra fina vira laço, que foi o defeito relatado. */
+        RAIO_PERTO: 0.7,
+        /* Mesmo com raio pequeno sobra ~11% de poses onde o alvo cai DENTRO do
+           círculo de giro — aí não existe curva para a frente, só a volta
+           inteira. Nessas, reta: aponta o alvo sem desenhar manobra impossível,
+           e a visada já provou que o segmento está livre. */
+        RAZAO_PERTO: 2.6,
+
         REVELA: 0.60,       // segundos do traçado saindo da empilhadeira
         // A intro da câmera dura 2,6 s. Sem esperar, o traçado acontecia
         // inteiro enquanto o jogador ainda via o plano de abertura — a
@@ -135,9 +148,17 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
            pista depois de ela já estar desenhada nunca via animação nenhuma.
            O pulso repete, então a direção do percurso fica legível a qualquer
            momento, não só no instante em que a pista acende. */
-        PULSO_T: 1.15,      // período, em segundos
+        PULSO_T: 1.50,      // período, em segundos
         PULSO_W: 0.20,      // meia-largura na cabeça do cometa
         PULSO_CAUDA: 7,     // comprimento da cauda, em índices do traçado
+
+        /* Setas de percurso. A fita diz ONDE é a pista; as setas dizem para que
+           LADO se anda nela, e é o que aponta o objetivo de longe. Rolam no
+           mesmo período do pulso para os dois lerem como um movimento só. */
+        SETAS_N: 5,
+        SETAS_LEN: 0.46,
+        SETAS_W: 0.34,
+        SETAS_ALT: 0.026,   // acima da fita (0,02) para não brigar por z
     };
 
     /** Fita de largura fixa gerada por frame ao longo de uma curva. Não dá para
@@ -174,9 +195,23 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         Object.assign(trilhoE, { desvio: -PISTA.BITOLA, opBase: 0.5, opEixo: 0.72, corEstado: true });
         Object.assign(trilhoD, { desvio: PISTA.BITOLA, opBase: 0.5, opEixo: 0.72, corEstado: true });
         g.add(base.mesh, pulso.mesh, trilhoE.mesh, trilhoD.mesh);
+
+        // setas: N triângulos soltos, um buffer só, reposicionados por frame
+        const sg = new THREE.BufferGeometry();
+        sg.setAttribute('position',
+            new THREE.BufferAttribute(new Float32Array(PISTA.SETAS_N * 9), 3));
+        const sm = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({
+            color: COLOR.hazard, transparent: true, opacity: 0.9,
+            depthWrite: false, side: THREE.DoubleSide,
+        }));
+        sm.renderOrder = 5;
+        sm.frustumCulled = false;
+        g.add(sm);
+
         g.visible = false;
         scene.add(g);
-        return { grupo: g, fitas: [base, pulso, trilhoE, trilhoD] };
+        return { grupo: g, fitas: [base, pulso, trilhoE, trilhoD],
+                 setas: { mesh: sm, pos: sg.attributes.position } };
     })();
 
     /** Caminho curvo do jogador até o alvo.
@@ -242,15 +277,23 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         const px = new Float32Array(n + 1), pz = new Float32Array(n + 1);
 
         if (distBoca < PISTA.RETO) {
-            /* Perto demais para Dubins — ver PISTA.RETO. Reta da máquina até a
-               boca: o mesmo segmento que a visada acabou de provar estar livre,
-               então é impossível ele atravessar prateleira. E como não depende do
-               rumo, ele para de recalcular manobra a cada tremida do volante no
-               último metro, que era exatamente a "volta sem sentido". */
-            for (let i = 0; i <= n; i++) {
-                const t = i / n;
-                px[i] = st.x + (bocaX - st.x) * t;
-                pz[i] = st.z + (bocaZ - st.z) * t;
+            /* Perto demais para o Dubins completo — ver PISTA.RETO. Aqui o rumo
+               de chegada é SOLTO: arco até apontar a boca, depois reta. Continua
+               sendo curva de verdade, e continua respeitando o raio de giro, mas
+               não tem como virar laço, porque o laço vinha justamente de exigir
+               o rumo final a 20 cm do alvo. Se a boca ficar atrás, o arco vira
+               meia-volta — e aí a volta é a manobra certa, não um traçado torto. */
+            const cam = arcoAtePonto({ x: st.x, z: st.z, yaw: st.yaw },
+                { x: bocaX, z: bocaZ }, PISTA.RAIO_PERTO, n);
+            if (cam && cam.comprimento <= distBoca * PISTA.RAZAO_PERTO) {
+                for (let i = 0; i <= n; i++) { px[i] = cam.pts[i][0]; pz[i] = cam.pts[i][1]; }
+            } else {
+                // sem curva possível para a frente: reta, que ao menos aponta certo
+                for (let i = 0; i <= n; i++) {
+                    const t = i / n;
+                    px[i] = st.x + (bocaX - st.x) * t;
+                    pz[i] = st.z + (bocaZ - st.z) * t;
+                }
             }
         } else {
             /* Caminho de Dubins: o menor trajeto que ESTA máquina consegue
@@ -313,6 +356,34 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
             // Mais sutil: a pista orienta, não compete com a cena.
             f.mesh.material.opacity = (noEixo ? f.opEixo : f.opBase) * fade;
         }
+
+        /* Setas rolando em direção ao alvo. Espaçadas por 1/N do caminho e
+           deslocadas pelo mesmo relógio do pulso, então nascem na empilhadeira e
+           somem no alvo, em fila. */
+        const sArr = pista.setas.pos.array;
+        for (let k = 0; k < PISTA.SETAS_N; k++) {
+            const u = (k / PISTA.SETAS_N + S.pistaPulso / PISTA.PULSO_T) % 1;
+            const fi = u * n;
+            const i = Math.min(n - 1, Math.floor(fi));
+            const fr = fi - i;
+            const cx = px[i] + (px[i + 1] - px[i]) * fr;
+            const cz = pz[i] + (pz[i + 1] - pz[i]) * fr;
+            let tx = px[i + 1] - px[i], tz = pz[i + 1] - pz[i];
+            const L = Math.hypot(tx, tz) || 1;
+            tx /= L; tz /= L;
+            // encolhe junto com o traçado que ainda está brotando
+            const grau = THREE.MathUtils.clamp(frenteRevela - fi, 0, 1);
+            const e = PISTA.SETAS_LEN * 0.5 * grau, w = PISTA.SETAS_W * 0.5 * grau;
+            const nx = tz * w, nz = -tx * w;
+            const o = k * 9;
+            sArr[o] = cx + tx * e; sArr[o + 1] = PISTA.SETAS_ALT; sArr[o + 2] = cz + tz * e;
+            sArr[o + 3] = cx - tx * e + nx; sArr[o + 4] = PISTA.SETAS_ALT; sArr[o + 5] = cz - tz * e + nz;
+            sArr[o + 6] = cx - tx * e - nx; sArr[o + 7] = PISTA.SETAS_ALT; sArr[o + 8] = cz - tz * e - nz;
+        }
+        pista.setas.pos.needsUpdate = true;
+        pista.setas.mesh.material.color.setHex(cor);
+        pista.setas.mesh.material.opacity = 0.9 * fade;
+
         pista.grupo.visible = true;
         return { lateral, rumoErr, dist, frente, noEixo };
     }
@@ -393,11 +464,15 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
 
         const agora = performance.now();
         if (!reduzirMovimento && agora - chipT > 380) {
+            /* O deslocamento em X TEM que estar nos dois quadros: é o que
+               centraliza o chip, e sem ele o elemento salta para o lado durante
+               a animação. Mas o valor MUDA com o regime de posicionamento —
+               -50% solto no desktop, 0 quando o chip entra em fluxo na coluna de
+               avisos em toque. Por isso vem da variável CSS, não fixo aqui. */
+            const tx = getComputedStyle(e).getPropertyValue('--chip-tx').trim() || '-50%';
             e.animate([
-                // o translateX(-50%) TEM que estar aqui: é o que centraliza o
-                // chip. Sem ele o elemento salta para a esquerda na animação.
-                { transform: `translateX(-50%) translateY(${trocaDeTom ? -7 : -4}px)`, opacity: .35 },
-                { transform: 'translateX(-50%) translateY(0)', opacity: 1 },
+                { transform: `translateX(${tx}) translateY(${trocaDeTom ? -7 : -4}px)`, opacity: .35 },
+                { transform: `translateX(${tx}) translateY(0)`, opacity: 1 },
             ], { duration: trocaDeTom ? 240 : 190, easing: 'cubic-bezier(.14,.8,.26,1)' });
             chipT = agora;
         }
