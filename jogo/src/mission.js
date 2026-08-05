@@ -56,17 +56,30 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
        As guias acima dizem PARA ONDE eu aponto. Esta diz ONDE eu deveria
        estar: é o eixo de entrada do alvo, desenhado no chão, saindo da face
        dele na direção de quem chega. Alinhar as duas coisas é o ajuste fino.
-       Só aparece perto (a partir de 6 m), senão vira poluição.
+       Só acende quando se está À FRENTE da face, dentro do corredor.
 
        Base escura obrigatória: a lima tem 1,12:1 de contraste contra o
        concreto do piso — sozinha ela some. Escuro dá a silhueta, a lima dá o
        estado. Mesma regra da HUD. */
     const PISTA = {
-        N: 26, LARG: 0.92, BITOLA: 0.30, PERTO: 6.5, TRAVA: 4.0,
+        N: 26, LARG: 0.86, BITOLA: 0.30,
         // Raio de giro do guia. A máquina faz 0,57 m parada e 3,2 m a toda;
         // 1,6 m é o que ela consegue na velocidade de aproximação. Um guia com
         // raio menor que o real desenha manobra que não sai.
         RAIO: 1.6,
+
+        /* Zona de aparição. Era um raio circular, e por isso a pista acendia
+           estando do OUTRO lado da prateleira — perto em linha reta, mas sem
+           nenhum caminho até a vaga. Agora é a região à FRENTE da face: um
+           corredor, medido ao longo do eixo de entrada e limitado de lado.
+           Entrar no corredor por qualquer ponta já acende; passar por trás do
+           rack, não. */
+        FRENTE_MIN: 0.4,    // logo à frente da face
+        FRENTE_MAX: 9.0,    // pega o corredor inteiro, não só o entorno
+        LADO_MAX: 3.2,      // largura do corredor
+        CHEIO: 5.0,         // daqui para frente a pista está com opacidade cheia
+
+        REVELA: 0.45,       // segundos do traçado saindo da empilhadeira
     };
 
     /** Fita de largura fixa gerada por frame ao longo de uma curva. Não dá para
@@ -92,9 +105,9 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
 
     const pista = (() => {
         const g = new THREE.Group();
-        const base = criarFita(PISTA.LARG / 2, COLOR.ink, 0.34, 2);
-        const trilhoE = criarFita(0.028, COLOR.hazard, 0.9, 4);
-        const trilhoD = criarFita(0.028, COLOR.hazard, 0.9, 4);
+        const base = criarFita(PISTA.LARG / 2, COLOR.ink, 0.16, 2);
+        const trilhoE = criarFita(0.022, COLOR.hazard, 0.55, 4);
+        const trilhoD = criarFita(0.022, COLOR.hazard, 0.55, 4);
         trilhoE.desvio = -PISTA.BITOLA;
         trilhoD.desvio = PISTA.BITOLA;
         base.desvio = 0;
@@ -111,14 +124,18 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
      *  posição atual da máquina, na direção em que ela aponta, e chega no alvo
      *  já alinhada com o eixo de entrada — é o caminho a percorrer, desenhado.
      *
-     *  Hermite cúbica: as tangentes das pontas é que garantem sair "de onde
-     *  estou olhando" e chegar "de frente". */
-    function atualizaPista(alvo, st, simetrico) {
-        if (!alvo) { pista.grupo.visible = false; return null; }
+     *  O traçado é de Dubins, então nunca desenha manobra que a máquina não
+     *  consiga fazer, e brota da empilhadeira em direção ao alvo. */
+    function atualizaPista(alvo, st, simetrico, dt) {
+        const esconde = () => {
+            pista.grupo.visible = false;
+            S.pistaRevela = 0;      // reaparecer volta a traçar do zero
+            return null;
+        };
+        if (!alvo) return esconde();
 
         const dx = st.x - alvo.x, dz = st.z - alvo.z;
         const dist = Math.hypot(dx, dz);
-        if (dist > PISTA.PERTO) { pista.grupo.visible = false; return null; }
 
         // Palete tem simetria de 180°: a entrada é pelo lado de quem chega.
         let yaw = alvo.yaw || 0;
@@ -127,7 +144,12 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         // eixo que sai do alvo em direção a quem chega
         const ax = Math.sin(yaw), az = Math.cos(yaw);
 
+        // Decomposição na moldura do alvo: quanto estou À FRENTE dele, e quanto
+        // estou desviado de lado. É o que substitui o raio circular.
+        const frente = ax * dx + az * dz;
         const lateral = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
+        if (frente < PISTA.FRENTE_MIN || frente > PISTA.FRENTE_MAX
+            || Math.abs(lateral) > PISTA.LADO_MAX) return esconde();
         let rumoErr = st.yaw - (yaw + Math.PI);
         rumoErr = Math.abs(Math.atan2(Math.sin(rumoErr), Math.cos(rumoErr)));
         const noEixo = Math.abs(lateral) < 0.34 && rumoErr < D2R(16);
@@ -144,8 +166,18 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         const px = new Float32Array(n + 1), pz = new Float32Array(n + 1);
         for (let i = 0; i <= n; i++) { px[i] = cam.pts[i][0]; pz[i] = cam.pts[i][1]; }
 
-        const fade = THREE.MathUtils.clamp((PISTA.PERTO - dist) / (PISTA.PERTO - PISTA.TRAVA), 0, 1);
+        // Some suave nas bordas do corredor em vez de piscar ao cruzar o limite.
+        const fFrente = THREE.MathUtils.clamp(
+            (PISTA.FRENTE_MAX - frente) / (PISTA.FRENTE_MAX - PISTA.CHEIO), 0, 1);
+        const fLado = THREE.MathUtils.clamp(
+            (PISTA.LADO_MAX - Math.abs(lateral)) / 1.1, 0, 1);
+        const fade = fFrente * fLado;
         const cor = noEixo ? COLOR.deep : COLOR.hazard;
+
+        // Traçado saindo da empilhadeira: a curva começa na máquina (i=0), então
+        // revelar por índice crescente é o guia brotando dela em direção ao alvo.
+        S.pistaRevela = Math.min(1, S.pistaRevela + (dt || 0.016) / PISTA.REVELA);
+        const frenteRevela = S.pistaRevela * (n + 3);
 
         for (const f of pista.fitas) {
             const arr = f.pos.array;
@@ -155,7 +187,9 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
                 let tx = px[b] - px[a], tz = pz[b] - pz[a];
                 const L = Math.hypot(tx, tz) || 1;
                 tx /= L; tz /= L;
-                const nx = tz * f.meiaLargura, nz = -tx * f.meiaLargura;
+                const grau = THREE.MathUtils.clamp(frenteRevela - i, 0, 1);
+                const mw = f.meiaLargura * grau;
+                const nx = tz * mw, nz = -tx * mw;
                 const cx = px[i] + tz * f.desvio, cz = pz[i] - tx * f.desvio;
                 const o = i * 6;
                 arr[o] = cx - nx; arr[o + 1] = 0.02; arr[o + 2] = cz - nz;
@@ -163,10 +197,11 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             }
             f.pos.needsUpdate = true;
             if (f.desvio !== 0) f.mesh.material.color.setHex(cor);
-            f.mesh.material.opacity = (f.desvio === 0 ? 0.34 : (noEixo ? 1 : 0.85)) * fade;
+            // Mais sutil: a pista orienta, não compete com a cena.
+            f.mesh.material.opacity = (f.desvio === 0 ? 0.16 : (noEixo ? 0.72 : 0.5)) * fade;
         }
         pista.grupo.visible = true;
-        return { lateral, rumoErr, dist, noEixo };
+        return { lateral, rumoErr, dist, frente, noEixo };
     }
 
     const mk = hud.addMarker({ label: 'PALETE', sub: 'SKU 4412', kind: 'alvo' });
@@ -186,6 +221,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         picoALat: 0,
         pallet: null,
         pista: null,
+        pistaRevela: 0,
     };
 
     function begin() {
@@ -206,6 +242,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         S.avisouGarfo = false;
         S.picoALat = 0;
         S.pista = null;
+        S.pistaRevela = 0;
         pista.grupo.visible = false;
         hud.setMarker(mk, {
             pos: new THREE.Vector3(PALETE.x, 0.9, PALETE.z),
@@ -315,7 +352,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
                 ? { x: S.pallet.position.x, z: S.pallet.position.z, yaw: S.pallet.rotation.y }
                 : null)
             : S.fase === 'transportar' ? VAGA : null;
-        S.pista = atualizaPista(alvoPista, st, S.fase === 'buscar');
+        S.pista = atualizaPista(alvoPista, st, S.fase === 'buscar', dt);
 
         /* ---------- engate AUTOMÁTICO no instante do encaixe ----------
            Era: alinhar E segurar o ▲ dentro de uma janela estreita de
