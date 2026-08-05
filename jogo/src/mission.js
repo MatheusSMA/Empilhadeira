@@ -102,11 +102,42 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         LADO_MAX: 3.2,      // largura do corredor
         CHEIO: 5.0,         // daqui para frente a pista está com opacidade cheia
 
-        REVELA: 0.45,       // segundos do traçado saindo da empilhadeira
+        /* Espaço de arranque ATRÁS da boca. Estar à frente da face e enxergar a
+           boca ainda não quer dizer que dá para entrar: entre o palete e a
+           prateleira de trás sobra um bolsão de 1,5 m sem saída, e a pista
+           acendia lá mandando entrar por um lado onde a máquina não cabe.
+           Se o eixo de entrada não tem 2,6 m livres (1,9 m de chassi + folga),
+           não existe rua — existe parede. */
+        ARRANQUE: 2.6,
+
+        /* Abaixo desta distância da boca o traçado é RETO, e isso não é
+           simplificação: Dubins entre poses separadas por menos de ~3 raios de
+           giro devolve laço, porque a única forma de corrigir 20 cm mantendo o
+           rumo de chegada é dar a volta inteira. Medido nesta pista — de 0 a 1 m
+           a mediana do caminho é 15× a reta, e chega a 56×. Era isso que
+           desenhava "rota sem sentido" no último metro. A reta é honesta: a
+           visada até a boca já foi testada, então ela sempre está livre. */
+        RETO: 5.0,
+        // Acima de RETO o Dubins vale, mas ainda pode degenerar numa pose ruim.
+        // Passou disto de volta, não há caminho para a frente que preste: some,
+        // e o jogador contorna. Mentir com um laço é pior que não desenhar.
+        RAZAO_MAX: 2.2,
+        MORRE: 0.30,        // colado na boca as guias do garfo assumem
+
+        REVELA: 0.60,       // segundos do traçado saindo da empilhadeira
         // A intro da câmera dura 2,6 s. Sem esperar, o traçado acontecia
         // inteiro enquanto o jogador ainda via o plano de abertura — a
         // animação existia e nunca era vista.
         ESPERA_INTRO: 2.7,
+
+        /* Pulso que corre da empilhadeira até o alvo, em laço. O traçado que
+           brota uma vez dura meio segundo e passa despercebido — quem olha a
+           pista depois de ela já estar desenhada nunca via animação nenhuma.
+           O pulso repete, então a direção do percurso fica legível a qualquer
+           momento, não só no instante em que a pista acende. */
+        PULSO_T: 1.15,      // período, em segundos
+        PULSO_W: 0.20,      // meia-largura na cabeça do cometa
+        PULSO_CAUDA: 7,     // comprimento da cauda, em índices do traçado
     };
 
     /** Fita de largura fixa gerada por frame ao longo de uma curva. Não dá para
@@ -132,16 +163,20 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
 
     const pista = (() => {
         const g = new THREE.Group();
+        // opBase / opEixo: opacidade fora e dentro do eixo. corEstado marca quem
+        // acompanha a cor de alinhamento — a base escura é silhueta, não estado.
         const base = criarFita(PISTA.LARG / 2, COLOR.ink, 0.16, 2);
+        const pulso = criarFita(PISTA.PULSO_W, COLOR.hazard, 0.80, 3);
         const trilhoE = criarFita(0.022, COLOR.hazard, 0.55, 4);
         const trilhoD = criarFita(0.022, COLOR.hazard, 0.55, 4);
-        trilhoE.desvio = -PISTA.BITOLA;
-        trilhoD.desvio = PISTA.BITOLA;
-        base.desvio = 0;
-        g.add(base.mesh, trilhoE.mesh, trilhoD.mesh);
+        Object.assign(base, { desvio: 0, opBase: 0.16, opEixo: 0.16, corEstado: false });
+        Object.assign(pulso, { desvio: 0, opBase: 0.80, opEixo: 0.92, corEstado: true, ehPulso: true });
+        Object.assign(trilhoE, { desvio: -PISTA.BITOLA, opBase: 0.5, opEixo: 0.72, corEstado: true });
+        Object.assign(trilhoD, { desvio: PISTA.BITOLA, opBase: 0.5, opEixo: 0.72, corEstado: true });
+        g.add(base.mesh, pulso.mesh, trilhoE.mesh, trilhoD.mesh);
         g.visible = false;
         scene.add(g);
-        return { grupo: g, fitas: [base, trilhoE, trilhoD] };
+        return { grupo: g, fitas: [base, pulso, trilhoE, trilhoD] };
     })();
 
     /** Caminho curvo do jogador até o alvo.
@@ -189,34 +224,66 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
            faz o teste falhar sempre, inclusive na rua certa. */
         const bocaX = alvo.x + ax * 1.15, bocaZ = alvo.z + az * 1.15;
         if (colisores && !segmentoLivre(st.x, st.z, bocaX, bocaZ, colisores)) return esconde();
+
+        /* E tem espaço para se alinhar? A visada prova que dá para VER a boca, não
+           que dá para ENTRAR nela. Sem este teste a pista acendia no bolsão entre
+           o palete e a prateleira de trás — 1,5 m sem saída, do lado errado. */
+        if (colisores && !segmentoLivre(bocaX, bocaZ,
+            bocaX + ax * PISTA.ARRANQUE, bocaZ + az * PISTA.ARRANQUE, colisores)) return esconde();
+
         let rumoErr = st.yaw - (yaw + Math.PI);
         rumoErr = Math.abs(Math.atan2(Math.sin(rumoErr), Math.cos(rumoErr)));
         const noEixo = Math.abs(lateral) < 0.34 && rumoErr < D2R(16);
 
-        /* Caminho de Dubins: o menor trajeto que ESTA máquina consegue percorrer.
-           A interpolação suave anterior ignorava o raio de giro — chegando a 90°
-           do alvo ela desenhava uma curva impossível, e um guia impossível é pior
-           que guia nenhum. Dubins nunca devolve nada mais fechado que R. */
-        const chegada = { x: bocaX, z: bocaZ, yaw: yaw + Math.PI };
-        const cam = caminhoDubins({ x: st.x, z: st.z, yaw: st.yaw }, chegada, PISTA.RAIO, PISTA.N);
-        if (!cam) { pista.grupo.visible = false; return null; }
-
         const n = PISTA.N;
+        const distBoca = Math.hypot(bocaX - st.x, bocaZ - st.z);
+        if (distBoca < PISTA.MORRE) return esconde();
+
         const px = new Float32Array(n + 1), pz = new Float32Array(n + 1);
-        for (let i = 0; i <= n; i++) { px[i] = cam.pts[i][0]; pz[i] = cam.pts[i][1]; }
+
+        if (distBoca < PISTA.RETO) {
+            /* Perto demais para Dubins — ver PISTA.RETO. Reta da máquina até a
+               boca: o mesmo segmento que a visada acabou de provar estar livre,
+               então é impossível ele atravessar prateleira. E como não depende do
+               rumo, ele para de recalcular manobra a cada tremida do volante no
+               último metro, que era exatamente a "volta sem sentido". */
+            for (let i = 0; i <= n; i++) {
+                const t = i / n;
+                px[i] = st.x + (bocaX - st.x) * t;
+                pz[i] = st.z + (bocaZ - st.z) * t;
+            }
+        } else {
+            /* Caminho de Dubins: o menor trajeto que ESTA máquina consegue
+               percorrer. A interpolação suave anterior ignorava o raio de giro —
+               chegando a 90° do alvo ela desenhava uma curva impossível, e um guia
+               impossível é pior que guia nenhum. Dubins nunca devolve nada mais
+               fechado que R; quando devolve um laço longo, é porque não há saída
+               para a frente, e aí some. */
+            const chegada = { x: bocaX, z: bocaZ, yaw: yaw + Math.PI };
+            const cam = caminhoDubins({ x: st.x, z: st.z, yaw: st.yaw }, chegada, PISTA.RAIO, n);
+            if (!cam || cam.comprimento > distBoca * PISTA.RAZAO_MAX) return esconde();
+            for (let i = 0; i <= n; i++) { px[i] = cam.pts[i][0]; pz[i] = cam.pts[i][1]; }
+        }
 
         // Some suave nas bordas do corredor em vez de piscar ao cruzar o limite.
         const fFrente = THREE.MathUtils.clamp(
             (PISTA.FRENTE_MAX - frente) / (PISTA.FRENTE_MAX - PISTA.CHEIO), 0, 1);
         const fLado = THREE.MathUtils.clamp(
             (PISTA.LADO_MAX - Math.abs(lateral)) / 1.1, 0, 1);
-        const fade = fFrente * fLado;
+        // e some ao encostar na boca, em vez de cortar seco em PISTA.MORRE
+        const fPerto = THREE.MathUtils.clamp((distBoca - PISTA.MORRE) / 0.55, 0, 1);
+        const fade = fFrente * fLado * fPerto;
         const cor = noEixo ? COLOR.deep : COLOR.hazard;
 
         // Traçado saindo da empilhadeira: a curva começa na máquina (i=0), então
         // revelar por índice crescente é o guia brotando dela em direção ao alvo.
         S.pistaRevela = Math.min(1, S.pistaRevela + (dt || 0.016) / PISTA.REVELA);
         const frenteRevela = S.pistaRevela * (n + 3);
+
+        // Cabeça do pulso, em índice: entra pela máquina (−cauda) e sai no alvo.
+        S.pistaPulso = (S.pistaPulso + (dt || 0.016)) % PISTA.PULSO_T;
+        const cabeca = -PISTA.PULSO_CAUDA
+            + (S.pistaPulso / PISTA.PULSO_T) * (n + 1 + PISTA.PULSO_CAUDA);
 
         for (const f of pista.fitas) {
             const arr = f.pos.array;
@@ -227,7 +294,14 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
                 const L = Math.hypot(tx, tz) || 1;
                 tx /= L; tz /= L;
                 const grau = THREE.MathUtils.clamp(frenteRevela - i, 0, 1);
-                const mw = f.meiaLargura * grau;
+                let mw = f.meiaLargura * grau;
+                if (f.ehPulso) {
+                    // cometa: cheio na cabeça, afinando até sumir no fim da cauda
+                    const d = cabeca - i;
+                    mw *= (d < 0 || d > PISTA.PULSO_CAUDA)
+                        ? 0
+                        : Math.pow(1 - d / PISTA.PULSO_CAUDA, 0.7);
+                }
                 const nx = tz * mw, nz = -tx * mw;
                 const cx = px[i] + tz * f.desvio, cz = pz[i] - tx * f.desvio;
                 const o = i * 6;
@@ -235,9 +309,9 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
                 arr[o + 3] = cx + nx; arr[o + 4] = 0.02; arr[o + 5] = cz + nz;
             }
             f.pos.needsUpdate = true;
-            if (f.desvio !== 0) f.mesh.material.color.setHex(cor);
+            if (f.corEstado) f.mesh.material.color.setHex(cor);
             // Mais sutil: a pista orienta, não compete com a cena.
-            f.mesh.material.opacity = (f.desvio === 0 ? 0.16 : (noEixo ? 0.72 : 0.5)) * fade;
+            f.mesh.material.opacity = (noEixo ? f.opEixo : f.opBase) * fade;
         }
         pista.grupo.visible = true;
         return { lateral, rumoErr, dist, frente, noEixo };
@@ -261,6 +335,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         pallet: null,
         pista: null,
         pistaRevela: 0,
+        pistaPulso: 0,
         pistaEspera: 0,
     };
 
@@ -283,6 +358,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
         S.picoALat = 0;
         S.pista = null;
         S.pistaRevela = 0;
+        S.pistaPulso = 0;
         S.pistaEspera = PISTA.ESPERA_INTRO;
         pista.grupo.visible = false;
         hud.setMarker(mk, {
@@ -406,6 +482,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry, coli
             haptics.toca("engate");
             S.fase = 'transportar';
             S.pistaRevela = 0;   // alvo novo, traçado novo
+            S.pistaPulso = 0;    // e o pulso recomeça saindo da máquina
             S.semProgresso = 0;
             S.autoTilt = 0;
             palletSys.setTarget(VAGA);
