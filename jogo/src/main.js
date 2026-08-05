@@ -36,7 +36,7 @@ scene.add(forklift.root);
 
 const palletSys = createPalletSystem({ scene, forklift });
 const hud = createHud(document.querySelector('.hud'));
-const mission = createMission({ scene, forklift, palletSys, hud });
+const mission = createMission({ scene, forklift, palletSys, hud, colisores: world.colliders });
 
 /* ---------- estado do loop ---------- */
 const STEP = 1 / 60;

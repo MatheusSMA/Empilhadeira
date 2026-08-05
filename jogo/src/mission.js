@@ -14,6 +14,29 @@ import { caminhoDubins } from './dubins.js';
 
 const D2R = THREE.MathUtils.degToRad;
 
+/** O segmento entre dois pontos atravessa algum colisor? Método dos slabs.
+ *  Barato o bastante para rodar por frame com ~12 caixas. */
+function segmentoLivre(x0, z0, x1, z1, colisores) {
+    const dx = x1 - x0, dz = z1 - z0;
+    for (const c of colisores) {
+        let t0 = 0, t1 = 1, bate = true;
+        const eixos = [[x0, c.x - c.hw, c.x + c.hw, dx], [z0, c.z - c.hd, c.z + c.hd, dz]];
+        for (const [p, lo, hi, d] of eixos) {
+            if (Math.abs(d) < 1e-9) {
+                if (p < lo || p > hi) { bate = false; break; }
+                continue;
+            }
+            let a = (lo - p) / d, b = (hi - p) / d;
+            if (a > b) { const t = a; a = b; b = t; }
+            if (a > t0) t0 = a;
+            if (b < t1) t1 = b;
+            if (t0 > t1) { bate = false; break; }
+        }
+        if (bate) return false;
+    }
+    return true;
+}
+
 const PALETE = { x: -1.9, z: 3.4, yaw: 0.16, label: 'SKU 4412', kg: 820 };
 
 // Resolvido contra o gerador do warehouse.js, não estimado:
@@ -28,7 +51,7 @@ const GUIA = {
 };
 
 
-export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
+export function createMission({ scene, forklift, palletSys, hud, telemetry, colisores }) {
     const reduzirMovimento = matchMedia('(prefers-reduced-motion: reduce)').matches;
     let chipTxt = '', chipTom = '', chipT = 0;
 
@@ -80,6 +103,10 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         CHEIO: 5.0,         // daqui para frente a pista está com opacidade cheia
 
         REVELA: 0.45,       // segundos do traçado saindo da empilhadeira
+        // A intro da câmera dura 2,6 s. Sem esperar, o traçado acontecia
+        // inteiro enquanto o jogador ainda via o plano de abertura — a
+        // animação existia e nunca era vista.
+        ESPERA_INTRO: 2.7,
     };
 
     /** Fita de largura fixa gerada por frame ao longo de uma curva. Não dá para
@@ -133,6 +160,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             return null;
         };
         if (!alvo) return esconde();
+        if (S.pistaEspera > 0) { S.pistaEspera -= (dt || 0.016); return esconde(); }
 
         const dx = st.x - alvo.x, dz = st.z - alvo.z;
         const dist = Math.hypot(dx, dz);
@@ -150,6 +178,17 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         const lateral = Math.cos(yaw) * dx - Math.sin(yaw) * dz;
         if (frente < PISTA.FRENTE_MIN || frente > PISTA.FRENTE_MAX
             || Math.abs(lateral) > PISTA.LADO_MAX) return esconde();
+
+        /* Estar "à frente" não basta: o palete tem simetria de 180°, então de
+           qualquer lado você está tecnicamente na frente dele — inclusive da rua
+           de cima, com um rack inteiro no meio. Se há prateleira entre a máquina
+           e o alvo, não existe caminho, e desenhar um seria mentira.
+
+           A visada vai até a BOCA de entrada, não até o alvo: a vaga fica na
+           face do rack, ou seja, dentro do próprio colisor dele — mirar o alvo
+           faz o teste falhar sempre, inclusive na rua certa. */
+        const bocaX = alvo.x + ax * 1.15, bocaZ = alvo.z + az * 1.15;
+        if (colisores && !segmentoLivre(st.x, st.z, bocaX, bocaZ, colisores)) return esconde();
         let rumoErr = st.yaw - (yaw + Math.PI);
         rumoErr = Math.abs(Math.atan2(Math.sin(rumoErr), Math.cos(rumoErr)));
         const noEixo = Math.abs(lateral) < 0.34 && rumoErr < D2R(16);
@@ -158,7 +197,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
            A interpolação suave anterior ignorava o raio de giro — chegando a 90°
            do alvo ela desenhava uma curva impossível, e um guia impossível é pior
            que guia nenhum. Dubins nunca devolve nada mais fechado que R. */
-        const chegada = { x: alvo.x + ax * 1.15, z: alvo.z + az * 1.15, yaw: yaw + Math.PI };
+        const chegada = { x: bocaX, z: bocaZ, yaw: yaw + Math.PI };
         const cam = caminhoDubins({ x: st.x, z: st.z, yaw: st.yaw }, chegada, PISTA.RAIO, PISTA.N);
         if (!cam) { pista.grupo.visible = false; return null; }
 
@@ -222,6 +261,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         pallet: null,
         pista: null,
         pistaRevela: 0,
+        pistaEspera: 0,
     };
 
     function begin() {
@@ -243,6 +283,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         S.picoALat = 0;
         S.pista = null;
         S.pistaRevela = 0;
+        S.pistaEspera = PISTA.ESPERA_INTRO;
         pista.grupo.visible = false;
         hud.setMarker(mk, {
             pos: new THREE.Vector3(PALETE.x, 0.9, PALETE.z),
@@ -364,6 +405,7 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
             S.engate.depth = cand.depth;
             haptics.toca("engate");
             S.fase = 'transportar';
+            S.pistaRevela = 0;   // alvo novo, traçado novo
             S.semProgresso = 0;
             S.autoTilt = 0;
             palletSys.setTarget(VAGA);
@@ -475,5 +517,6 @@ export function createMission({ scene, forklift, palletSys, hud, telemetry }) {
         card.hidden = false;
     }
 
-    return { begin, update, onCollision, state: S, VAGA, PALETE };
+    return { begin, update, onCollision, state: S, VAGA, PALETE,
+             get temColisores() { return !!(colisores && colisores.length); } };
 }

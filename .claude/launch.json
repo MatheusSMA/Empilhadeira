@@ -4,9 +4,9 @@
     {
       "name": "jogo",
       "runtimeExecutable": "python",
-      "runtimeArgs": [".claude/devserver.py", "8140"],
-      "port": 8140,
-      "url": "http://localhost:8140"
+      "runtimeArgs": [".claude/devserver.py", "8163"],
+      "port": 8163,
+      "url": "http://localhost:8163"
     }
   ]
 }
